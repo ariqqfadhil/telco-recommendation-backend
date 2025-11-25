@@ -1,29 +1,40 @@
 {
   "name": "telco-recommendation-backend",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "Backend API for Telco Product Recommendation System",
+  "main": "src/server.js",
   "scripts": {
+    "start": "node src/server.js",
+    "dev": "nodemon src/server.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "keywords": [],
-  "author": "",
+  "keywords": [
+    "telco",
+    "recommendation",
+    "hapi",
+    "api"
+  ],
+  "author": "Muhammad Ariq Fadhil - A25-CS024",
   "license": "ISC",
   "dependencies": {
     "@hapi/boom": "^10.0.1",
-    "@hapi/hapi": "^21.4.4",
+    "@hapi/hapi": "^21.3.2",
     "@hapi/inert": "^7.1.0",
-    "@hapi/jwt": "^3.2.1",
+    "@hapi/jwt": "^3.2.0",
     "@hapi/vision": "^7.0.3",
-    "axios": "^1.13.2",
-    "bcrypt": "^6.0.0",
-    "dotenv": "^17.2.3",
-    "form-data": "^4.0.5",
-    "joi": "^18.0.2",
-    "mongoose": "^9.0.0"
+    "axios": "^1.6.2",
+    "bcrypt": "^5.1.1",
+    "dotenv": "^16.3.1",
+    "form-data": "^4.0.0",
+    "joi": "^17.11.0",
+    "mongoose": "^8.0.3"
   },
   "devDependencies": {
-    "eslint": "^9.39.1",
-    "nodemon": "^3.1.11"
+    "eslint": "^8.56.0",
+    "nodemon": "^3.0.2"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
   }
 }
