@@ -68,8 +68,7 @@ const userSchema = new mongoose.Schema(
   }
 );
 
-// Index for faster queries
-userSchema.index({ email: 1 });
+// Index for faster queries (email sudah unique di schema, tidak perlu index lagi)
 userSchema.index({ role: 1 });
 
 module.exports = mongoose.model('User', userSchema);

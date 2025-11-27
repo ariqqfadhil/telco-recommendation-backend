@@ -1,7 +1,3 @@
-const authRoutes = require('./auth');
-const productRoutes = require('./products');
-const recommendationRoutes = require('./recommendations');
-
 // Health check route
 const healthRoute = {
   method: 'GET',
@@ -45,13 +41,18 @@ const apiInfoRoute = {
   },
 };
 
-// Combine all routes
+// Import route modules
+const authRoutes = require('./auth');
+const productRoutes = require('./products');
+const recommendationRoutes = require('./recommendations');
+
+// Combine all routes - ensure all imports are arrays
 const routes = [
   healthRoute,
   apiInfoRoute,
-  ...authRoutes,
-  ...productRoutes,
-  ...recommendationRoutes,
+  ...(Array.isArray(authRoutes) ? authRoutes : []),
+  ...(Array.isArray(productRoutes) ? productRoutes : []),
+  ...(Array.isArray(recommendationRoutes) ? recommendationRoutes : []),
 ];
 
 module.exports = routes;

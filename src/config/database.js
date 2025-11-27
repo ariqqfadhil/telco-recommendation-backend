@@ -3,13 +3,29 @@ const config = require('./env');
 
 const connectDatabase = async () => {
   try {
-    await mongoose.connect(config.database.uri, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-    });
+    // Connection options
+    const options = {
+      serverSelectionTimeoutMS: 10000, // Timeout 10 detik
+      socketTimeoutMS: 45000,
+    };
+
+    console.log('🔄 Connecting to database...');
+    console.log('📍 Database URI:', config.database.uri.replace(/\/\/([^:]+):([^@]+)@/, '//$1:****@')); // Hide password in log
+    
+    await mongoose.connect(config.database.uri, options);
+    
     console.log('✅ Database connected successfully');
+    console.log('📦 Database name:', mongoose.connection.name);
   } catch (error) {
     console.error('❌ Database connection failed:', error.message);
+    console.error('');
+    console.error('💡 Troubleshooting tips:');
+    console.error('   1. Check if MongoDB is running (local) or accessible (Atlas)');
+    console.error('   2. Verify DB_URI in .env file');
+    console.error('   3. For Atlas: Check Network Access whitelist (0.0.0.0/0)');
+    console.error('   4. For Atlas: Verify database user credentials');
+    console.error('   5. Check your internet connection');
+    console.error('');
     process.exit(1);
   }
 };
