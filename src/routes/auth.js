@@ -8,14 +8,25 @@ const authRoutes = [
     handler: authHandler.register,
     options: {
       auth: false,
-      description: 'Register new user',
+      description: 'Register new user with phone number and PIN',
       tags: ['api', 'auth'],
       validate: {
         payload: Joi.object({
-          name: Joi.string().min(3).max(100).required(),
-          email: Joi.string().email().required(),
-          password: Joi.string().min(6).required(),
-          phoneNumber: Joi.string().optional(),
+          phoneNumber: Joi.string()
+            .pattern(/^(\+62|62|0)[0-9]{9,12}$/)
+            .required()
+            .messages({
+              'string.pattern.base': 'Phone number must be a valid Indonesian number (e.g., 08123456789 or +628123456789)',
+            }),
+          pin: Joi.string()
+            .length(6)
+            .pattern(/^[0-9]+$/)
+            .required()
+            .messages({
+              'string.length': 'PIN must be exactly 6 digits',
+              'string.pattern.base': 'PIN must contain only numbers',
+            }),
+          name: Joi.string().min(3).max(100).optional(),
         }),
       },
     },
@@ -26,12 +37,24 @@ const authRoutes = [
     handler: authHandler.login,
     options: {
       auth: false,
-      description: 'User login',
+      description: 'User login with phone number and PIN',
       tags: ['api', 'auth'],
       validate: {
         payload: Joi.object({
-          email: Joi.string().email().required(),
-          password: Joi.string().required(),
+          phoneNumber: Joi.string()
+            .pattern(/^(\+62|62|0)[0-9]{9,12}$/)
+            .required()
+            .messages({
+              'string.pattern.base': 'Phone number must be a valid Indonesian number',
+            }),
+          pin: Joi.string()
+            .length(6)
+            .pattern(/^[0-9]+$/)
+            .required()
+            .messages({
+              'string.length': 'PIN must be exactly 6 digits',
+              'string.pattern.base': 'PIN must contain only numbers',
+            }),
         }),
       },
     },
@@ -57,7 +80,7 @@ const authRoutes = [
       validate: {
         payload: Joi.object({
           name: Joi.string().min(3).max(100).optional(),
-          phoneNumber: Joi.string().optional(),
+          profilePicture: Joi.string().uri().optional(),
           preferences: Joi.object({
             usageType: Joi.string().valid('data', 'voice', 'sms', 'mixed').optional(),
             budget: Joi.string().valid('low', 'medium', 'high').optional(),
@@ -71,16 +94,43 @@ const authRoutes = [
   },
   {
     method: 'POST',
-    path: '/api/auth/change-password',
-    handler: authHandler.changePassword,
+    path: '/api/auth/change-pin',
+    handler: authHandler.changePin,
     options: {
       auth: 'jwt',
-      description: 'Change user password',
+      description: 'Change user PIN',
       tags: ['api', 'auth'],
       validate: {
         payload: Joi.object({
-          oldPassword: Joi.string().required(),
-          newPassword: Joi.string().min(6).required(),
+          oldPin: Joi.string()
+            .length(6)
+            .pattern(/^[0-9]+$/)
+            .required(),
+          newPin: Joi.string()
+            .length(6)
+            .pattern(/^[0-9]+$/)
+            .required()
+            .invalid(Joi.ref('oldPin'))
+            .messages({
+              'any.invalid': 'New PIN must be different from old PIN',
+            }),
+        }),
+      },
+    },
+  },
+  {
+    method: 'POST',
+    path: '/api/auth/check-phone',
+    handler: authHandler.checkPhoneAvailability,
+    options: {
+      auth: false,
+      description: 'Check if phone number is available',
+      tags: ['api', 'auth'],
+      validate: {
+        payload: Joi.object({
+          phoneNumber: Joi.string()
+            .pattern(/^(\+62|62|0)[0-9]{9,12}$/)
+            .required(),
         }),
       },
     },

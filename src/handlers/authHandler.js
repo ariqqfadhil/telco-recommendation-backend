@@ -1,6 +1,6 @@
 const Boom = require('@hapi/boom');
 const authService = require('../services/authService');
-const { successResponse, errorResponse } = require('../utils/response');
+const { successResponse } = require('../utils/response');
 
 class AuthHandler {
   /**
@@ -78,12 +78,12 @@ class AuthHandler {
   }
 
   /**
-   * POST /api/auth/change-password
+   * POST /api/auth/change-pin
    */
-  async changePassword(request, h) {
+  async changePin(request, h) {
     try {
       const { userId } = request.auth.credentials;
-      const result = await authService.changePassword(userId, request.payload);
+      const result = await authService.changePin(userId, request.payload);
 
       return h.response(
         successResponse(result.message)
@@ -92,7 +92,24 @@ class AuthHandler {
       if (Boom.isBoom(error)) {
         throw error;
       }
-      throw Boom.badImplementation('Failed to change password');
+      throw Boom.badImplementation('Failed to change PIN');
+    }
+  }
+
+  /**
+   * POST /api/auth/check-phone
+   */
+  async checkPhoneAvailability(request, h) {
+    try {
+      const result = await authService.checkPhoneAvailability(
+        request.payload.phoneNumber
+      );
+
+      return h.response(
+        successResponse('Phone number checked', result)
+      ).code(200);
+    } catch (error) {
+      throw Boom.badImplementation('Failed to check phone availability');
     }
   }
 

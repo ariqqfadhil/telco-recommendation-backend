@@ -2,32 +2,48 @@ const mongoose = require('mongoose');
 
 const userSchema = new mongoose.Schema(
   {
-    name: {
-      type: String,
-      required: true,
-      trim: true,
-    },
-    email: {
+    // Primary identifier: Phone number
+    phoneNumber: {
       type: String,
       required: true,
       unique: true,
-      lowercase: true,
       trim: true,
+      validate: {
+        validator: function(v) {
+          // Indonesian phone number format: 08xxx or +628xxx
+          return /^(\+62|62|0)[0-9]{9,12}$/.test(v);
+        },
+        message: props => `${props.value} is not a valid phone number!`
+      }
     },
-    password: {
+    
+    // Optional: Name (bisa diisi saat onboarding atau nanti)
+    name: {
+      type: String,
+      trim: true,
+      default: '',
+    },
+    
+    // PIN for authentication (6 digits)
+    pin: {
       type: String,
       required: true,
+      validate: {
+        validator: function(v) {
+          return /^[0-9]{6}$/.test(v);
+        },
+        message: 'PIN must be 6 digits'
+      }
     },
-    phoneNumber: {
-      type: String,
-      trim: true,
-    },
+    
+    // Role for authorization
     role: {
       type: String,
       enum: ['user', 'admin'],
       default: 'user',
     },
-    // Data untuk profiling rekomendasi
+    
+    // User preferences untuk profiling rekomendasi
     preferences: {
       usageType: {
         type: String,
@@ -44,23 +60,22 @@ const userSchema = new mongoose.Schema(
         enum: ['streaming', 'gaming', 'social-media', 'work', 'browsing'],
       }],
     },
-    // Tracking untuk behavior analysis
-    usageHistory: [{
-      productId: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Product',
-      },
-      usageDate: {
-        type: Date,
-        default: Date.now,
-      },
-      dataUsed: Number, // in MB
-      callDuration: Number, // in minutes
-      smsCount: Number,
-    }],
+    
+    // Account status
     isActive: {
       type: Boolean,
       default: true,
+    },
+    
+    // Optional: Profile picture URL
+    profilePicture: {
+      type: String,
+      default: '',
+    },
+    
+    // Metadata
+    lastLogin: {
+      type: Date,
     },
   },
   {
@@ -68,7 +83,20 @@ const userSchema = new mongoose.Schema(
   }
 );
 
-// Index for faster queries (email sudah unique di schema, tidak perlu index lagi)
+// Index for faster queries
+userSchema.index({ phoneNumber: 1 });
 userSchema.index({ role: 1 });
+
+// Virtual to format phone number for display
+userSchema.virtual('formattedPhone').get(function() {
+  // Format: 0812-3456-7890
+  const phone = this.phoneNumber.replace(/^(\+62|62)/, '0');
+  return phone.replace(/(\d{4})(\d{4})(\d+)/, '$1-$2-$3');
+});
+
+// Method to check if user is new (no name set)
+userSchema.methods.isNewUser = function() {
+  return !this.name || this.name === '';
+};
 
 module.exports = mongoose.model('User', userSchema);
