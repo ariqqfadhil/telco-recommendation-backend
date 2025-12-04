@@ -6,7 +6,7 @@ const userSchema = new mongoose.Schema(
     phoneNumber: {
       type: String,
       required: true,
-      unique: true,
+      unique: true, // This already creates index
       trim: true,
       validate: {
         validator: function(v) {
@@ -41,6 +41,7 @@ const userSchema = new mongoose.Schema(
       type: String,
       enum: ['user', 'admin'],
       default: 'user',
+      index: true, // Index for role-based queries
     },
     
     // User preferences untuk profiling rekomendasi
@@ -83,9 +84,8 @@ const userSchema = new mongoose.Schema(
   }
 );
 
-// Index for faster queries
-userSchema.index({ phoneNumber: 1 });
-userSchema.index({ role: 1 });
+// No need to manually add index for phoneNumber since unique:true already creates it
+// Only add index for fields that need it but don't have unique:true
 
 // Virtual to format phone number for display
 userSchema.virtual('formattedPhone').get(function() {
