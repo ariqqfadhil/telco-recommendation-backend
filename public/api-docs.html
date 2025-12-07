@@ -1,0 +1,821 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Telco Recommendation API Documentation</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      line-height: 1.6;
+      color: #333;
+      background: #f5f7fa;
+    }
+
+    .header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 2rem 0;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+
+    .header .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 2rem;
+    }
+
+    .header h1 {
+      font-size: 2.5rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .header p {
+      font-size: 1.1rem;
+      opacity: 0.9;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 0.25rem 0.75rem;
+      background: rgba(255,255,255,0.2);
+      border-radius: 20px;
+      font-size: 0.85rem;
+      margin: 0.5rem 0.5rem 0 0;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 2rem;
+    }
+
+    .sidebar {
+      position: fixed;
+      left: 0;
+      top: 140px;
+      width: 280px;
+      height: calc(100vh - 140px);
+      background: white;
+      border-right: 1px solid #e5e7eb;
+      overflow-y: auto;
+      padding: 2rem 1rem;
+    }
+
+    .sidebar h3 {
+      font-size: 0.875rem;
+      text-transform: uppercase;
+      color: #6b7280;
+      margin-bottom: 1rem;
+      font-weight: 600;
+    }
+
+    .sidebar ul {
+      list-style: none;
+      margin-bottom: 2rem;
+    }
+
+    .sidebar li {
+      margin-bottom: 0.5rem;
+    }
+
+    .sidebar a {
+      color: #374151;
+      text-decoration: none;
+      display: block;
+      padding: 0.5rem 1rem;
+      border-radius: 6px;
+      transition: all 0.2s;
+      font-size: 0.95rem;
+    }
+
+    .sidebar a:hover {
+      background: #f3f4f6;
+      color: #667eea;
+    }
+
+    .content {
+      margin-left: 300px;
+      padding: 2rem;
+    }
+
+    .section {
+      background: white;
+      border-radius: 12px;
+      padding: 2rem;
+      margin-bottom: 2rem;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+
+    .section h2 {
+      color: #1f2937;
+      margin-bottom: 1rem;
+      padding-bottom: 0.75rem;
+      border-bottom: 2px solid #e5e7eb;
+      font-size: 1.75rem;
+    }
+
+    .section h3 {
+      color: #374151;
+      margin: 2rem 0 1rem 0;
+      font-size: 1.35rem;
+    }
+
+    .endpoint {
+      background: #f9fafb;
+      border-left: 4px solid #667eea;
+      padding: 1.5rem;
+      margin: 1.5rem 0;
+      border-radius: 8px;
+    }
+
+    .endpoint-header {
+      display: flex;
+      align-items: center;
+      margin-bottom: 1rem;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    .method {
+      display: inline-block;
+      padding: 0.4rem 1rem;
+      border-radius: 6px;
+      font-weight: 600;
+      font-size: 0.85rem;
+      letter-spacing: 0.5px;
+    }
+
+    .method.get { background: #10b981; color: white; }
+    .method.post { background: #3b82f6; color: white; }
+    .method.put { background: #f59e0b; color: white; }
+    .method.delete { background: #ef4444; color: white; }
+
+    .endpoint-path {
+      font-family: 'Courier New', monospace;
+      font-size: 1.1rem;
+      color: #374151;
+      font-weight: 500;
+    }
+
+    .auth-badge {
+      display: inline-block;
+      padding: 0.3rem 0.75rem;
+      background: #fee2e2;
+      color: #dc2626;
+      border-radius: 4px;
+      font-size: 0.8rem;
+      font-weight: 600;
+    }
+
+    .auth-badge.public {
+      background: #d1fae5;
+      color: #059669;
+    }
+
+    .code-block {
+      background: #1f2937;
+      color: #f3f4f6;
+      padding: 1.5rem;
+      border-radius: 8px;
+      overflow-x: auto;
+      margin: 1rem 0;
+      font-family: 'Courier New', monospace;
+      font-size: 0.9rem;
+      line-height: 1.6;
+    }
+
+    .code-block .key { color: #60a5fa; }
+    .code-block .string { color: #34d399; }
+    .code-block .number { color: #fbbf24; }
+    .code-block .boolean { color: #f87171; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 1rem 0;
+    }
+
+    table th,
+    table td {
+      padding: 0.75rem;
+      text-align: left;
+      border-bottom: 1px solid #e5e7eb;
+    }
+
+    table th {
+      background: #f9fafb;
+      font-weight: 600;
+      color: #374151;
+      font-size: 0.9rem;
+    }
+
+    table td {
+      font-size: 0.9rem;
+    }
+
+    table code {
+      background: #f3f4f6;
+      padding: 0.2rem 0.5rem;
+      border-radius: 4px;
+      font-size: 0.85rem;
+      color: #dc2626;
+    }
+
+    .info-box {
+      background: #eff6ff;
+      border-left: 4px solid #3b82f6;
+      padding: 1rem 1.5rem;
+      border-radius: 6px;
+      margin: 1.5rem 0;
+    }
+
+    .info-box.warning {
+      background: #fef3c7;
+      border-left-color: #f59e0b;
+    }
+
+    .info-box.success {
+      background: #d1fae5;
+      border-left-color: #10b981;
+    }
+
+    .info-box strong {
+      display: block;
+      margin-bottom: 0.5rem;
+      color: #1f2937;
+    }
+
+    .try-it-btn {
+      background: #667eea;
+      color: white;
+      border: none;
+      padding: 0.75rem 1.5rem;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 600;
+      margin-top: 1rem;
+      transition: all 0.2s;
+    }
+
+    .try-it-btn:hover {
+      background: #5568d3;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+    }
+
+    .category-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1rem;
+      margin: 1.5rem 0;
+    }
+
+    .category-card {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 1.5rem;
+      border-radius: 10px;
+      text-align: center;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
+
+    .category-card h4 {
+      font-size: 1.25rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .category-card p {
+      font-size: 0.9rem;
+      opacity: 0.9;
+    }
+
+    @media (max-width: 768px) {
+      .sidebar {
+        display: none;
+      }
+      
+      .content {
+        margin-left: 0;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="container">
+      <h1>📱 Telco Recommendation API</h1>
+      <p>Complete API Documentation for Telco Product Recommendation System</p>
+      <div>
+        <span class="badge">v2.1</span>
+        <span class="badge">REST API</span>
+        <span class="badge">JWT Auth</span>
+        <span class="badge">40+ Endpoints</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="sidebar">
+    <h3>Navigation</h3>
+    <ul>
+      <li><a href="#overview">📋 Overview</a></li>
+      <li><a href="#authentication">🔐 Authentication</a></li>
+      <li><a href="#response-format">📄 Response Format</a></li>
+    </ul>
+    
+    <h3>Endpoints</h3>
+    <ul>
+      <li><a href="#auth-endpoints">🔑 Auth Endpoints</a></li>
+      <li><a href="#product-endpoints">📦 Product Endpoints</a></li>
+      <li><a href="#recommendation-endpoints">🎯 Recommendations</a></li>
+    </ul>
+    
+    <h3>Resources</h3>
+    <ul>
+      <li><a href="#error-handling">❌ Error Handling</a></li>
+      <li><a href="#testing">🧪 Testing Guide</a></li>
+      <li><a href="#integration">💻 Integration</a></li>
+    </ul>
+  </div>
+
+  <div class="content">
+    <!-- Overview Section -->
+    <div class="section" id="overview">
+      <h2>📋 Overview</h2>
+      <p>Telco Recommendation API adalah backend system untuk aplikasi rekomendasi produk telekomunikasi berbasis perilaku pelanggan menggunakan Machine Learning.</p>
+      
+      <h3>Base URLs</h3>
+      <div class="code-block">Development: http://localhost:5000
+Production: https://your-api-url.com</div>
+
+      <h3>Product Categories</h3>
+      <div class="category-grid">
+        <div class="category-card">
+          <h4>📊 Data</h4>
+          <p>10 produk</p>
+        </div>
+        <div class="category-card">
+          <h4>📞 Voice</h4>
+          <p>6 produk</p>
+        </div>
+        <div class="category-card">
+          <h4>💬 SMS</h4>
+          <p>4 produk</p>
+        </div>
+        <div class="category-card">
+          <h4>🎁 Combo</h4>
+          <p>8 produk</p>
+        </div>
+        <div class="category-card">
+          <h4>🎬 VOD</h4>
+          <p>5 produk</p>
+        </div>
+        <div class="category-card">
+          <h4>📺 Streaming</h4>
+          <p>7 produk</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Authentication Section -->
+    <div class="section" id="authentication">
+      <h2>🔐 Authentication</h2>
+      <p>API menggunakan <strong>JWT (JSON Web Token)</strong> untuk authentication.</p>
+      
+      <div class="info-box">
+        <strong>Authentication Method:</strong>
+        • Phone Number (Indonesian format: 08xxx, +628xxx, 628xxx)<br>
+        • 6-digit PIN (numeric only)<br>
+        • Token valid for 7 days
+      </div>
+
+      <h3>Header Format</h3>
+      <div class="code-block">Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...</div>
+    </div>
+
+    <!-- Response Format Section -->
+    <div class="section" id="response-format">
+      <h2>📄 Response Format</h2>
+      
+      <h3>Success Response</h3>
+      <div class="code-block">{
+  <span class="key">"status"</span>: <span class="string">"success"</span>,
+  <span class="key">"message"</span>: <span class="string">"Description of action"</span>,
+  <span class="key">"data"</span>: { ... }
+}</div>
+
+      <h3>Error Response</h3>
+      <div class="code-block">{
+  <span class="key">"status"</span>: <span class="string">"error"</span>,
+  <span class="key">"message"</span>: <span class="string">"Error description"</span>,
+  <span class="key">"statusCode"</span>: <span class="number">400</span>
+}</div>
+    </div>
+
+    <!-- Auth Endpoints Section -->
+    <div class="section" id="auth-endpoints">
+      <h2>🔑 Authentication Endpoints</h2>
+
+      <!-- Register Endpoint -->
+      <div class="endpoint">
+        <div class="endpoint-header">
+          <span class="method post">POST</span>
+          <span class="endpoint-path">/api/auth/register</span>
+          <span class="auth-badge public">Public</span>
+        </div>
+        <p><strong>Register new user</strong></p>
+        
+        <h4>Request Body:</h4>
+        <div class="code-block">{
+  <span class="key">"phoneNumber"</span>: <span class="string">"081234567890"</span>,
+  <span class="key">"pin"</span>: <span class="string">"123456"</span>,
+  <span class="key">"name"</span>: <span class="string">"John Doe"</span>
+}</div>
+
+        <h4>Parameters:</h4>
+        <table>
+          <tr>
+            <th>Field</th>
+            <th>Type</th>
+            <th>Required</th>
+            <th>Description</th>
+          </tr>
+          <tr>
+            <td><code>phoneNumber</code></td>
+            <td>string</td>
+            <td>Yes</td>
+            <td>Indonesian phone number</td>
+          </tr>
+          <tr>
+            <td><code>pin</code></td>
+            <td>string</td>
+            <td>Yes</td>
+            <td>6-digit numeric PIN</td>
+          </tr>
+          <tr>
+            <td><code>name</code></td>
+            <td>string</td>
+            <td>No</td>
+            <td>User's full name</td>
+          </tr>
+        </table>
+
+        <h4>Success Response (201):</h4>
+        <div class="code-block">{
+  <span class="key">"status"</span>: <span class="string">"success"</span>,
+  <span class="key">"message"</span>: <span class="string">"User registered successfully"</span>,
+  <span class="key">"data"</span>: {
+    <span class="key">"user"</span>: {
+      <span class="key">"id"</span>: <span class="string">"65abc123..."</span>,
+      <span class="key">"phoneNumber"</span>: <span class="string">"081234567890"</span>,
+      <span class="key">"name"</span>: <span class="string">"John Doe"</span>,
+      <span class="key">"role"</span>: <span class="string">"user"</span>
+    },
+    <span class="key">"token"</span>: <span class="string">"eyJhbGciOiJIUzI1NiIs..."</span>
+  }
+}</div>
+        <button class="try-it-btn" onclick="copyCurl('register')">📋 Copy cURL</button>
+      </div>
+
+      <!-- Login Endpoint -->
+      <div class="endpoint">
+        <div class="endpoint-header">
+          <span class="method post">POST</span>
+          <span class="endpoint-path">/api/auth/login</span>
+          <span class="auth-badge public">Public</span>
+        </div>
+        <p><strong>Login user</strong></p>
+        
+        <h4>Request Body:</h4>
+        <div class="code-block">{
+  <span class="key">"phoneNumber"</span>: <span class="string">"081234567890"</span>,
+  <span class="key">"pin"</span>: <span class="string">"123456"</span>
+}</div>
+
+        <h4>Success Response (200):</h4>
+        <div class="code-block">{
+  <span class="key">"status"</span>: <span class="string">"success"</span>,
+  <span class="key">"message"</span>: <span class="string">"Login successful"</span>,
+  <span class="key">"data"</span>: {
+    <span class="key">"user"</span>: { ... },
+    <span class="key">"token"</span>: <span class="string">"eyJhbGciOiJIUzI1NiIs..."</span>
+  }
+}</div>
+        <button class="try-it-btn" onclick="copyCurl('login')">📋 Copy cURL</button>
+      </div>
+
+      <!-- Get Profile Endpoint -->
+      <div class="endpoint">
+        <div class="endpoint-header">
+          <span class="method get">GET</span>
+          <span class="endpoint-path">/api/auth/profile</span>
+          <span class="auth-badge">Requires Auth</span>
+        </div>
+        <p><strong>Get user profile</strong></p>
+        
+        <h4>Headers:</h4>
+        <div class="code-block">Authorization: Bearer YOUR_TOKEN_HERE</div>
+
+        <h4>Success Response (200):</h4>
+        <div class="code-block">{
+  <span class="key">"status"</span>: <span class="string">"success"</span>,
+  <span class="key">"data"</span>: {
+    <span class="key">"_id"</span>: <span class="string">"65abc..."</span>,
+    <span class="key">"phoneNumber"</span>: <span class="string">"081234567890"</span>,
+    <span class="key">"name"</span>: <span class="string">"John Doe"</span>,
+    <span class="key">"preferences"</span>: {
+      <span class="key">"usageType"</span>: <span class="string">"data"</span>,
+      <span class="key">"budget"</span>: <span class="string">"medium"</span>
+    }
+  }
+}</div>
+      </div>
+    </div>
+
+    <!-- Product Endpoints Section -->
+    <div class="section" id="product-endpoints">
+      <h2>📦 Product Endpoints</h2>
+
+      <!-- Get All Products -->
+      <div class="endpoint">
+        <div class="endpoint-header">
+          <span class="method get">GET</span>
+          <span class="endpoint-path">/api/products</span>
+          <span class="auth-badge public">Public</span>
+        </div>
+        <p><strong>Get all products with filtering and pagination</strong></p>
+        
+        <h4>Query Parameters:</h4>
+        <table>
+          <tr>
+            <th>Parameter</th>
+            <th>Type</th>
+            <th>Default</th>
+            <th>Description</th>
+          </tr>
+          <tr>
+            <td><code>page</code></td>
+            <td>number</td>
+            <td>1</td>
+            <td>Page number</td>
+          </tr>
+          <tr>
+            <td><code>limit</code></td>
+            <td>number</td>
+            <td>10</td>
+            <td>Items per page (max 100)</td>
+          </tr>
+          <tr>
+            <td><code>category</code></td>
+            <td>string</td>
+            <td>-</td>
+            <td>Filter by category</td>
+          </tr>
+          <tr>
+            <td><code>search</code></td>
+            <td>string</td>
+            <td>-</td>
+            <td>Search in name/description</td>
+          </tr>
+          <tr>
+            <td><code>sortBy</code></td>
+            <td>string</td>
+            <td>createdAt</td>
+            <td>Sort field</td>
+          </tr>
+        </table>
+
+        <h4>Example Requests:</h4>
+        <div class="code-block">GET /api/products
+GET /api/products?category=data
+GET /api/products?category=combo&minPrice=50000&maxPrice=150000
+GET /api/products?search=unlimited</div>
+
+        <button class="try-it-btn" onclick="window.open('http://localhost:5000/api/products', '_blank')">🚀 Try It</button>
+      </div>
+
+      <!-- Get Product by ID -->
+      <div class="endpoint">
+        <div class="endpoint-header">
+          <span class="method get">GET</span>
+          <span class="endpoint-path">/api/products/{id}</span>
+          <span class="auth-badge public">Public</span>
+        </div>
+        <p><strong>Get product detail by ID</strong></p>
+      </div>
+
+      <!-- Get Categories -->
+      <div class="endpoint">
+        <div class="endpoint-header">
+          <span class="method get">GET</span>
+          <span class="endpoint-path">/api/products/categories/list</span>
+          <span class="auth-badge public">Public</span>
+        </div>
+        <p><strong>Get all product categories</strong></p>
+        
+        <h4>Success Response (200):</h4>
+        <div class="code-block">{
+  <span class="key">"status"</span>: <span class="string">"success"</span>,
+  <span class="key">"data"</span>: [<span class="string">"data"</span>, <span class="string">"voice"</span>, <span class="string">"sms"</span>, <span class="string">"combo"</span>, <span class="string">"vod"</span>, <span class="string">"streaming"</span>]
+}</div>
+        <button class="try-it-btn" onclick="window.open('http://localhost:5000/api/products/categories/list', '_blank')">🚀 Try It</button>
+      </div>
+    </div>
+
+    <!-- Recommendation Endpoints Section -->
+    <div class="section" id="recommendation-endpoints">
+      <h2>🎯 Recommendation Endpoints</h2>
+
+      <!-- Get Recommendations -->
+      <div class="endpoint">
+        <div class="endpoint-header">
+          <span class="method get">GET</span>
+          <span class="endpoint-path">/api/recommendations</span>
+          <span class="auth-badge">Requires Auth</span>
+        </div>
+        <p><strong>Get personalized recommendations</strong></p>
+        
+        <h4>Query Parameters:</h4>
+        <table>
+          <tr>
+            <th>Parameter</th>
+            <th>Type</th>
+            <th>Options</th>
+          </tr>
+          <tr>
+            <td><code>algorithm</code></td>
+            <td>string</td>
+            <td><code>collaborative</code>, <code>content-based</code>, <code>hybrid</code></td>
+          </tr>
+          <tr>
+            <td><code>limit</code></td>
+            <td>number</td>
+            <td>1-20 (default: 5)</td>
+          </tr>
+        </table>
+
+        <div class="info-box warning">
+          <strong>⚠️ ML Model Status:</strong>
+          Currently using mock recommendations. Will automatically switch to real ML predictions when model is deployed.
+        </div>
+      </div>
+    </div>
+
+    <!-- Error Handling Section -->
+    <div class="section" id="error-handling">
+      <h2>❌ Error Handling</h2>
+      
+      <h3>HTTP Status Codes</h3>
+      <table>
+        <tr>
+          <th>Code</th>
+          <th>Meaning</th>
+          <th>When It Happens</th>
+        </tr>
+        <tr>
+          <td><code>200</code></td>
+          <td>OK</td>
+          <td>Request successful</td>
+        </tr>
+        <tr>
+          <td><code>201</code></td>
+          <td>Created</td>
+          <td>Resource created</td>
+        </tr>
+        <tr>
+          <td><code>400</code></td>
+          <td>Bad Request</td>
+          <td>Invalid input / validation error</td>
+        </tr>
+        <tr>
+          <td><code>401</code></td>
+          <td>Unauthorized</td>
+          <td>Missing/invalid token</td>
+        </tr>
+        <tr>
+          <td><code>404</code></td>
+          <td>Not Found</td>
+          <td>Resource doesn't exist</td>
+        </tr>
+        <tr>
+          <td><code>409</code></td>
+          <td>Conflict</td>
+          <td>Resource already exists</td>
+        </tr>
+      </table>
+    </div>
+
+    <!-- Testing Guide Section -->
+    <div class="section" id="testing">
+      <h2>🧪 Testing Guide</h2>
+      
+      <h3>Test Accounts (After Seeding)</h3>
+      <div class="info-box success">
+        <strong>Admin Account:</strong><br>
+        Phone: 081234567890<br>
+        PIN: admin1<br><br>
+        <strong>User Account:</strong><br>
+        Phone: 081234567891<br>
+        PIN: 123456
+      </div>
+
+      <h3>Quick Test Commands</h3>
+      <div class="code-block"># 1. Seed database
+node seed-data-complete.js
+
+# 2. Start server
+npm run dev
+
+# 3. Test health check
+curl http://localhost:5000/
+
+# 4. Test login
+curl -X POST http://localhost:5000/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"phoneNumber":"081234567891","pin":"123456"}'</div>
+    </div>
+
+    <!-- Integration Section -->
+    <div class="section" id="integration">
+      <h2>💻 Integration Examples</h2>
+      
+      <h3>JavaScript/React</h3>
+      <div class="code-block">// Register user
+const response = await fetch('http://localhost:5000/api/auth/register', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    phoneNumber: '081234567890',
+    pin: '123456',
+    name: 'John Doe'
+  })
+});
+
+const data = await response.json();
+if (data.status === 'success') {
+  localStorage.setItem('token', data.data.token);
+  // Redirect to dashboard
+}</div>
+
+      <h3>curl Example</h3>
+      <div class="code-block">curl -X POST http://localhost:5000/api/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{
+    "phoneNumber": "081234567890",
+    "pin": "123456",
+    "name": "Test User"
+  }'</div>
+    </div>
+
+    <!-- Footer -->
+    <div class="section">
+      <h2>📞 Support & Contact</h2>
+      <p><strong>Backend Developer:</strong> Muhammad Ariq Fadhil (F284D5Y1219)</p>
+      <p><strong>Team:</strong> A25-CS024 - Asah Dicoding x Accenture</p>
+      <p><strong>Project:</strong> Telco Product Recommendation System</p>
+      <p style="margin-top: 1.5rem; color: #6b7280;">
+        <strong>Version:</strong> 2.1 | <strong>Last Updated:</strong> December 2024
+      </p>
+    </div>
+  </div>
+
+  <script>
+    // Smooth scrolling for navigation
+    document.querySelectorAll('.sidebar a').forEach(anchor => {
+      anchor.addEventListener('click', function (e) {
+        e.preventDefault();
+        const target = document.querySelector(this.getAttribute('href'));
+        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
+    });
+
+    // Copy cURL commands
+    function copyCurl(type) {
+      let command = '';
+      
+      if (type === 'register') {
+        command = `curl -X POST http://localhost:5000/api/auth/register \\
+  -H "Content-Type: application/json" \\
+  -d '{"phoneNumber":"081234567890","pin":"123456","name":"Test User"}'`;
+      } else if (type === 'login') {
+        command = `curl -X POST http://localhost:5000/api/auth/login \\
+  -H "Content-Type: application/json" \\
+  -d '{"phoneNumber":"081234567891","pin":"123456"}'`;
+      }
+      
+      navigator.clipboard.writeText(command).then(() => {
+        alert('cURL command copied to clipboard!');
+      }).catch(() => {
+        alert('Failed to copy. Command:\n\n' + command);
+      });
+    }
+  </script>
+</body>
+</html>
+        

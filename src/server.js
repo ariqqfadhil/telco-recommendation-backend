@@ -3,6 +3,7 @@ const Jwt = require('@hapi/jwt');
 const Inert = require('@hapi/inert');
 const Vision = require('@hapi/vision');
 const Boom = require('@hapi/boom');
+const Path = require('path');
 
 const config = require('./config/env');
 const connectDatabase = require('./config/database');
@@ -29,6 +30,9 @@ const init = async () => {
             throw err;
           }
         },
+      },
+      files: {
+        relativeTo: Path.join(__dirname, '../public')
       },
     },
   });
@@ -77,6 +81,34 @@ const init = async () => {
 
   // Set default auth strategy
   server.auth.default('jwt');
+
+  // Serve API Documentation
+  server.route({
+    method: 'GET',
+    path: '/docs',
+    handler: (request, h) => {
+      return h.file('api-docs.html');
+    },
+    options: {
+      auth: false,
+      description: 'API Documentation',
+    }
+  });
+
+  // Serve static files from public folder
+  server.route({
+    method: 'GET',
+    path: '/public/{param*}',
+    handler: {
+      directory: {
+        path: '.',
+        redirectToSlash: true,
+      }
+    },
+    options: {
+      auth: false,
+    }
+  });
 
   // Register routes
   server.route(routes);
@@ -137,6 +169,7 @@ const init = async () => {
   console.log('');
   console.log('   📖 API Endpoints:');
   console.log('   - Health: GET /');
+  console.log('   - Docs: GET /docs');
   console.log('   - Auth: /api/auth/*');
   console.log('   - Products: /api/products/*');
   console.log('   - Recommendations: /api/recommendations/*');
