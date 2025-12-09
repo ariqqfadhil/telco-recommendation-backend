@@ -2,7 +2,7 @@
   "name": "telco-recommendation-backend",
   "version": "1.0.0",
   "description": "Backend API for Telco Product Recommendation System",
-  "main": "src/server.js",
+  "main": "node src/server.js",
   "scripts": {
     "start": "node src/server.js",
     "dev": "nodemon src/server.js",
