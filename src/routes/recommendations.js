@@ -1,65 +1,87 @@
-const mongoose = require('mongoose');
+const Joi = require('joi');
+const recommendationHandler = require('../handlers/recommendationHandler');
+const { checkRole } = require('../middleware/auth');
 
-const recommendationSchema = new mongoose.Schema(
+const recommendationRoutes = [
   {
-    userId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'User',
-      required: true,
+    method: 'GET',
+    path: '/api/recommendations',
+    handler: recommendationHandler.getRecommendations,
+    options: {
+      auth: 'jwt',
+      description: 'Get personalized product recommendations',
+      tags: ['api', 'recommendations'],
+      validate: {
+        query: Joi.object({
+          algorithm: Joi.string().valid('collaborative', 'content-based', 'hybrid').default('hybrid'),
+          limit: Joi.number().integer().min(1).max(20).default(5),
+        }),
+      },
     },
-    recommendedProducts: [{
-      productId: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Product',
-        required: true,
-      },
-      score: {
-        type: Number,
-        required: true,
-        min: 0,
-        max: 1,
-      },
-      reason: {
-        type: String,
-        trim: true,
-      },
-    }],
-    // Metadata untuk tracking
-    modelVersion: {
-      type: String,
-      default: 'v1.0',
-    },
-    algorithm: {
-      type: String,
-      enum: ['collaborative', 'content-based', 'hybrid'],
-      default: 'hybrid',
-    },
-    // User interaction tracking
-    interactions: [{
-      productId: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Product',
-      },
-      action: {
-        type: String,
-        enum: ['viewed', 'clicked', 'purchased', 'ignored'],
-      },
-      timestamp: {
-        type: Date,
-        default: Date.now,
-      },
-    }],
-    // Performance metrics
-    accuracy: Number,
-    responseTime: Number, // in milliseconds
   },
   {
-    timestamps: true,
-  }
-);
+    method: 'GET',
+    path: '/api/recommendations/history',
+    handler: recommendationHandler.getRecommendationHistory,
+    options: {
+      auth: 'jwt',
+      description: 'Get recommendation history',
+      tags: ['api', 'recommendations'],
+      validate: {
+        query: Joi.object({
+          page: Joi.number().integer().min(1).default(1),
+          limit: Joi.number().integer().min(1).max(50).default(10),
+        }),
+      },
+    },
+  },
+  {
+    method: 'POST',
+    path: '/api/recommendations/{id}/interaction',
+    handler: recommendationHandler.trackInteraction,
+    options: {
+      auth: 'jwt',
+      description: 'Track user interaction with recommendation',
+      tags: ['api', 'recommendations'],
+      validate: {
+        params: Joi.object({
+          id: Joi.string().required(),
+        }),
+        payload: Joi.object({
+          productId: Joi.string().required(),
+          action: Joi.string().valid('viewed', 'clicked', 'purchased', 'ignored').required(),
+        }),
+      },
+    },
+  },
+  {
+    method: 'GET',
+    path: '/api/recommendations/stats',
+    handler: recommendationHandler.getStats,
+    options: {
+      auth: 'jwt',
+      description: 'Get recommendation statistics (Admin only)',
+      tags: ['api', 'recommendations', 'admin'],
+      pre: [checkRole(['admin'])],
+    },
+  },
+  {
+    method: 'POST',
+    path: '/api/recommendations/feedback',
+    handler: recommendationHandler.submitFeedback,
+    options: {
+      auth: 'jwt',
+      description: 'Submit feedback on recommendation',
+      tags: ['api', 'recommendations'],
+      validate: {
+        payload: Joi.object({
+          recommendationId: Joi.string().required(),
+          rating: Joi.number().min(1).max(5).required(),
+          comment: Joi.string().optional(),
+        }),
+      },
+    },
+  },
+];
 
-// Indexes
-recommendationSchema.index({ userId: 1, createdAt: -1 });
-recommendationSchema.index({ 'recommendedProducts.productId': 1 });
-
-module.exports = mongoose.model('Recommendation', recommendationSchema);
+module.exports = recommendationRoutes;

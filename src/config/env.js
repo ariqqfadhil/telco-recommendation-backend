@@ -2,7 +2,7 @@ require('dotenv').config();
 
 const config = {
   server: {
-    host: process.env.HOST || 'localhost',
+    host: process.env.HOST || '0.0.0.0', // Important: 0.0.0.0 for Railway
     port: process.env.PORT || 5000,
     env: process.env.NODE_ENV || 'development',
   },
@@ -14,11 +14,11 @@ const config = {
     expiresIn: process.env.JWT_EXPIRES_IN || '7d',
   },
   mlService: {
-    url: process.env.ML_SERVICE_URL || 'http://localhost:8000',
+    url: process.env.ML_SERVICE_URL || 'http://localhost:8001',
     timeout: parseInt(process.env.ML_SERVICE_TIMEOUT) || 30000,
   },
   cors: {
-    origin: process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(',') : ['http://localhost:3000'],
+    origin: process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(',') : ['*'],
   },
 };
 

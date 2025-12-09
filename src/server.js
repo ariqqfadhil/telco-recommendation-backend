@@ -22,11 +22,9 @@ const init = async () => {
       validate: {
         failAction: async (request, h, err) => {
           if (config.server.env === 'production') {
-            // In production, log the error and return a generic error message
             console.error('Validation error:', err);
             throw Boom.badRequest('Invalid request payload input');
           } else {
-            // In development, return detailed error
             throw err;
           }
         },
@@ -71,7 +69,7 @@ const init = async () => {
         isValid: true,
         credentials: {
           userId: user._id,
-          email: user.email,
+          phoneNumber: user.phoneNumber,
           role: user.role,
           name: user.name,
         },

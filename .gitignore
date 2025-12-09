@@ -1,4 +1,16 @@
 node_modules/
 .env
 .env.local
+.env.production
 *.log
+.DS_Store
+.vscode/
+.idea/
+dist/
+build/
+coverage/
+
+# Don't commit sensitive data
+config/secrets.js
+*.pem
+*.key

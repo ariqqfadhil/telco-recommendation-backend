@@ -6,7 +6,7 @@ const userSchema = new mongoose.Schema(
     phoneNumber: {
       type: String,
       required: true,
-      unique: true, // This already creates index
+      unique: true,
       trim: true,
       validate: {
         validator: function(v) {
@@ -24,15 +24,16 @@ const userSchema = new mongoose.Schema(
       default: '',
     },
     
-    // PIN for authentication (6 digits)
+    // PIN for authentication (6 digits OR hashed version)
     pin: {
       type: String,
       required: true,
       validate: {
         validator: function(v) {
-          return /^[0-9]{6}$/.test(v);
+          // Allow either 6 digits (plain) or bcrypt hash (starts with $2b$ or $2a$)
+          return /^[0-9]{6}$/.test(v) || /^\$2[aby]\$/.test(v);
         },
-        message: 'PIN must be 6 digits'
+        message: 'PIN must be 6 digits or a valid hash'
       }
     },
     
@@ -41,7 +42,7 @@ const userSchema = new mongoose.Schema(
       type: String,
       enum: ['user', 'admin'],
       default: 'user',
-      index: true, // Index for role-based queries
+      index: true,
     },
     
     // User preferences untuk profiling rekomendasi
@@ -83,9 +84,6 @@ const userSchema = new mongoose.Schema(
     timestamps: true,
   }
 );
-
-// No need to manually add index for phoneNumber since unique:true already creates it
-// Only add index for fields that need it but don't have unique:true
 
 // Virtual to format phone number for display
 userSchema.virtual('formattedPhone').get(function() {
