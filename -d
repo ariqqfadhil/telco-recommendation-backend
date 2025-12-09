@@ -1,0 +1,1 @@
+{"status":"error","message":"\"value\" must be of type object","statusCode":400,"validation":{"defaultError":{"data":null,"isBoom":true,"isServer":false,"output":{"statusCode":400,"payload":{"statusCode":400,"error":"Bad Request","message":"Invalid request payload input"},"headers":{}}}}}
