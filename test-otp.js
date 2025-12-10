@@ -1,7 +1,7 @@
 require('dotenv').config();
 const axios = require('axios');
 
-const API_URL = process.env.API_URL || 'https://telco-recommendation-backend-production.up.railway.app/';
+const API_URL = process.env.API_URL || 'https://telco-recommendation-backend-production.up.railway.app';
 
 // Colors for console
 const colors = {
