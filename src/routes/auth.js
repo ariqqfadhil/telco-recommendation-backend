@@ -4,11 +4,11 @@ const authHandler = require('../handlers/authHandler');
 const authRoutes = [
   {
     method: 'POST',
-    path: '/api/auth/register',
-    handler: authHandler.register,
+    path: '/api/auth/request-otp',
+    handler: authHandler.requestOTP,
     options: {
       auth: false,
-      description: 'Register new user with phone number and PIN',
+      description: 'Request OTP for login/register',
       tags: ['api', 'auth'],
       validate: {
         payload: Joi.object({
@@ -18,14 +18,6 @@ const authRoutes = [
             .messages({
               'string.pattern.base': 'Phone number must be a valid Indonesian number (e.g., 08123456789 or +628123456789)',
             }),
-          pin: Joi.string()
-            .length(6)
-            .pattern(/^[0-9]+$/)
-            .required()
-            .messages({
-              'string.length': 'PIN must be exactly 6 digits',
-              'string.pattern.base': 'PIN must contain only numbers',
-            }),
           name: Joi.string().min(3).max(100).optional(),
         }),
       },
@@ -33,11 +25,11 @@ const authRoutes = [
   },
   {
     method: 'POST',
-    path: '/api/auth/login',
-    handler: authHandler.login,
+    path: '/api/auth/verify-otp',
+    handler: authHandler.verifyOTP,
     options: {
       auth: false,
-      description: 'User login with phone number and PIN',
+      description: 'Verify OTP and login',
       tags: ['api', 'auth'],
       validate: {
         payload: Joi.object({
@@ -47,16 +39,26 @@ const authRoutes = [
             .messages({
               'string.pattern.base': 'Phone number must be a valid Indonesian number',
             }),
-          pin: Joi.string()
+          otp: Joi.string()
             .length(6)
             .pattern(/^[0-9]+$/)
             .required()
             .messages({
-              'string.length': 'PIN must be exactly 6 digits',
-              'string.pattern.base': 'PIN must contain only numbers',
+              'string.length': 'OTP must be exactly 6 digits',
+              'string.pattern.base': 'OTP must contain only numbers',
             }),
         }),
       },
+    },
+  },
+  {
+    method: 'GET',
+    path: '/api/auth/otp-config',
+    handler: authHandler.getOTPConfig,
+    options: {
+      auth: false,
+      description: 'Get OTP configuration',
+      tags: ['api', 'auth'],
     },
   },
   {
@@ -94,37 +96,11 @@ const authRoutes = [
   },
   {
     method: 'POST',
-    path: '/api/auth/change-pin',
-    handler: authHandler.changePin,
-    options: {
-      auth: 'jwt',
-      description: 'Change user PIN',
-      tags: ['api', 'auth'],
-      validate: {
-        payload: Joi.object({
-          oldPin: Joi.string()
-            .length(6)
-            .pattern(/^[0-9]+$/)
-            .required(),
-          newPin: Joi.string()
-            .length(6)
-            .pattern(/^[0-9]+$/)
-            .required()
-            .invalid(Joi.ref('oldPin'))
-            .messages({
-              'any.invalid': 'New PIN must be different from old PIN',
-            }),
-        }),
-      },
-    },
-  },
-  {
-    method: 'POST',
     path: '/api/auth/check-phone',
     handler: authHandler.checkPhoneAvailability,
     options: {
       auth: false,
-      description: 'Check if phone number is available',
+      description: 'Check if phone number exists',
       tags: ['api', 'auth'],
       validate: {
         payload: Joi.object({

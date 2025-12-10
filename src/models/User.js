@@ -24,17 +24,25 @@ const userSchema = new mongoose.Schema(
       default: '',
     },
     
-    // PIN for authentication (6 digits OR hashed version)
-    pin: {
-      type: String,
-      required: true,
-      validate: {
-        validator: function(v) {
-          // Allow either 6 digits (plain) or bcrypt hash (starts with $2b$ or $2a$)
-          return /^[0-9]{6}$/.test(v) || /^\$2[aby]\$/.test(v);
-        },
-        message: 'PIN must be 6 digits or a valid hash'
-      }
+    // OTP fields untuk authentication
+    otp: {
+      code: {
+        type: String,
+        select: false, // Don't include in query results by default
+      },
+      expiresAt: {
+        type: Date,
+        select: false,
+      },
+      attempts: {
+        type: Number,
+        default: 0,
+        select: false,
+      },
+      lastSentAt: {
+        type: Date,
+        select: false,
+      },
     },
     
     // Role for authorization
@@ -69,6 +77,11 @@ const userSchema = new mongoose.Schema(
       default: true,
     },
     
+    isVerified: {
+      type: Boolean,
+      default: false,
+    },
+    
     // Optional: Profile picture URL
     profilePicture: {
       type: String,
@@ -95,6 +108,38 @@ userSchema.virtual('formattedPhone').get(function() {
 // Method to check if user is new (no name set)
 userSchema.methods.isNewUser = function() {
   return !this.name || this.name === '';
+};
+
+// Method to check if OTP is valid
+userSchema.methods.isOTPValid = function(code) {
+  if (!this.otp.code || !this.otp.expiresAt) {
+    return false;
+  }
+  
+  // Check if OTP expired
+  if (new Date() > this.otp.expiresAt) {
+    return false;
+  }
+  
+  // Check if code matches
+  return this.otp.code === code;
+};
+
+// Method to increment OTP attempts
+userSchema.methods.incrementOTPAttempts = function() {
+  this.otp.attempts = (this.otp.attempts || 0) + 1;
+};
+
+// Method to reset OTP attempts
+userSchema.methods.resetOTPAttempts = function() {
+  this.otp.attempts = 0;
+};
+
+// Method to clear OTP
+userSchema.methods.clearOTP = function() {
+  this.otp.code = undefined;
+  this.otp.expiresAt = undefined;
+  this.otp.attempts = 0;
 };
 
 module.exports = mongoose.model('User', userSchema);

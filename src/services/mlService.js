@@ -111,7 +111,7 @@ class MLService {
     // Format: {"status":"success","recommendation":"Voice Bundle","confidence":36.0}
     if (mlResponse.recommendation && mlResponse.confidence !== undefined) {
       return [{
-        product_name: mlResponse.recommendation,
+        targetOffer: mlResponse.recommendation, // ML returns target offer directly
         score: mlResponse.confidence / 100,
         reason: `Recommended based on ML model with ${mlResponse.confidence.toFixed(1)}% confidence`
       }];

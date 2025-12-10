@@ -161,56 +161,44 @@ class RecommendationHandler {
     return mlRecommendations
       .slice(0, limit)
       .map((rec, index) => {
-        let product;
+        let products;
         
-        // Try to find product by ID
-        if (rec.product_id) {
-          product = allProducts.find(p => p._id.toString() === rec.product_id);
+        // Try to find products by targetOffer (from ML)
+        if (rec.targetOffer) {
+          products = allProducts.filter(p => p.targetOffer === rec.targetOffer);
         }
         
-        // Try to find by name (case-insensitive, partial match)
-        if (!product && rec.product_name) {
-          product = allProducts.find(p => 
-            p.name.toLowerCase().includes(rec.product_name.toLowerCase()) ||
-            rec.product_name.toLowerCase().includes(p.name.toLowerCase())
-          );
+        // Fallback to category matching
+        if (!products || products.length === 0) {
+          const categoryMap = {
+            'Voice Bundle': 'voice',
+            'Data Booster': 'data',
+            'Roaming Pass': 'roaming',
+            'Streaming Partner Pack': 'streaming',
+            'Family Plan Offer': 'combo',
+            'Device Upgrade Offer': 'device',
+            'Retention Offer': 'combo',
+            'Top-up Promo': 'data',
+            'General Offer': 'combo',
+          };
           
-          // If not found by name, try by category
-          if (!product) {
-            const categoryMap = {
-              'voice': 'voice',
-              'data': 'data',
-              'bundle': 'combo',
-              'combo': 'combo',
-              'sms': 'sms',
-              'streaming': 'streaming',
-              'vod': 'vod'
-            };
-            
-            const recCategory = Object.keys(categoryMap).find(key => 
-              rec.product_name.toLowerCase().includes(key)
-            );
-            
-            if (recCategory) {
-              const products = allProducts.filter(p => 
-                p.category === categoryMap[recCategory]
-              );
-              product = products[Math.floor(Math.random() * products.length)];
-            }
+          const category = categoryMap[rec.targetOffer];
+          if (category) {
+            products = allProducts.filter(p => p.category === category);
           }
         }
         
-        // Fallback: use product by index
-        if (!product) {
-          product = allProducts[index % allProducts.length];
-        }
+        // Pick random product from filtered results or fallback
+        const product = products && products.length > 0
+          ? products[Math.floor(Math.random() * products.length)]
+          : allProducts[index % allProducts.length];
         
         return {
           productId: product._id,
           score: rec.score || 0.5,
           reason: rec.reason || 'Recommended based on your usage pattern',
           product: product,
-          mlRecommendation: rec.product_name || rec.product_id || 'N/A'
+          mlRecommendation: rec.targetOffer || 'General Offer'
         };
       });
   }

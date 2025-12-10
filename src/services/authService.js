@@ -1,69 +1,88 @@
 const Boom = require('@hapi/boom');
 const User = require('../models/User');
-const { hashPassword, comparePassword } = require('../utils/hash');
 const { generateToken } = require('../utils/jwt');
+const otpService = require('./otpService');
 
 class AuthService {
   /**
-   * Register new user dengan phone number + PIN
+   * Request OTP - Register or Login
+   * Creates user if not exists, sends OTP
    */
-  async register(userData) {
-    const { phoneNumber, pin, name } = userData;
-
-    // Normalize phone number (remove spaces, convert +62 to 0)
+  async requestOTP(phoneNumber, name = null) {
+    // Normalize phone number
     const normalizedPhone = this.normalizePhoneNumber(phoneNumber);
 
-    // Check if user already exists
-    const existingUser = await User.findOne({ phoneNumber: normalizedPhone });
-    if (existingUser) {
-      throw Boom.conflict('Phone number already registered');
+    // Find or create user
+    let user = await User.findOne({ phoneNumber: normalizedPhone })
+      .select('+otp.lastSentAt');
+
+    const isNewUser = !user;
+
+    if (!user) {
+      // Create new user
+      user = new User({
+        phoneNumber: normalizedPhone,
+        name: name || '',
+        role: 'user',
+        isVerified: false,
+      });
     }
 
-    // Hash PIN
-    const hashedPin = await hashPassword(pin);
+    // Check resend cooldown
+    if (!otpService.canResendOTP(user.otp?.lastSentAt)) {
+      const remaining = otpService.getRemainingCooldown(user.otp.lastSentAt);
+      throw Boom.tooManyRequests(
+        `Please wait ${remaining} seconds before requesting a new OTP`
+      );
+    }
 
-    // Create new user
-    const user = new User({
-      phoneNumber: normalizedPhone,
-      pin: hashedPin,
-      name: name || '',
-      role: 'user',
-    });
+    // Generate OTP
+    const otpCode = otpService.generateOTP();
+    const expiryTime = otpService.getExpiryTime();
+
+    // Save OTP to user
+    user.otp = {
+      code: otpCode,
+      expiresAt: expiryTime,
+      attempts: 0,
+      lastSentAt: new Date(),
+    };
 
     await user.save();
 
-    // Generate token
-    const token = generateToken({
-      userId: user._id,
-      phoneNumber: user.phoneNumber,
-      role: user.role,
-    });
+    // Send OTP via SMS
+    const formattedPhone = otpService.formatPhoneNumber(normalizedPhone);
+    await otpService.sendOTP(formattedPhone, otpCode);
 
     return {
-      user: {
-        id: user._id,
-        phoneNumber: user.phoneNumber,
-        name: user.name,
-        role: user.role,
-        isNewUser: user.isNewUser(),
-      },
-      token,
+      message: isNewUser 
+        ? 'Account created. OTP sent to your phone' 
+        : 'OTP sent to your phone',
+      phoneNumber: normalizedPhone,
+      isNewUser,
+      expiresIn: otpService.OTP_EXPIRY_MINUTES * 60, // in seconds
+      canResendIn: otpService.RESEND_COOLDOWN_SECONDS,
     };
   }
 
   /**
-   * Login user dengan phone number + PIN
+   * Verify OTP and login
    */
-  async login(credentials) {
-    const { phoneNumber, pin } = credentials;
+  async verifyOTP(phoneNumber, otpCode) {
+    // Validate OTP format
+    if (!otpService.isValidOTPFormat(otpCode)) {
+      throw Boom.badRequest('Invalid OTP format');
+    }
 
     // Normalize phone number
     const normalizedPhone = this.normalizePhoneNumber(phoneNumber);
 
-    // Find user
-    const user = await User.findOne({ phoneNumber: normalizedPhone });
+    // Find user with OTP data
+    const user = await User.findOne({ phoneNumber: normalizedPhone })
+      .select('+otp.code +otp.expiresAt +otp.attempts');
+
     if (!user) {
-      throw Boom.unauthorized('Invalid phone number or PIN');
+      throw Boom.notFound('User not found');
     }
 
     // Check if user is active
@@ -71,13 +90,44 @@ class AuthService {
       throw Boom.forbidden('Your account has been deactivated');
     }
 
-    // Verify PIN
-    const isPinValid = await comparePassword(pin, user.pin);
-    if (!isPinValid) {
-      throw Boom.unauthorized('Invalid phone number or PIN');
+    // Check if OTP exists
+    if (!user.otp?.code || !user.otp?.expiresAt) {
+      throw Boom.badRequest('No OTP found. Please request a new OTP');
     }
 
-    // Update last login
+    // Check max attempts
+    if (user.otp.attempts >= otpService.MAX_OTP_ATTEMPTS) {
+      // Clear OTP and require new request
+      user.clearOTP();
+      await user.save();
+      throw Boom.tooManyRequests(
+        'Too many failed attempts. Please request a new OTP'
+      );
+    }
+
+    // Check if OTP expired
+    if (new Date() > user.otp.expiresAt) {
+      user.clearOTP();
+      await user.save();
+      throw Boom.badRequest('OTP has expired. Please request a new OTP');
+    }
+
+    // Verify OTP code
+    if (!user.isOTPValid(otpCode)) {
+      // Increment attempts
+      user.incrementOTPAttempts();
+      await user.save();
+      
+      const remainingAttempts = otpService.MAX_OTP_ATTEMPTS - user.otp.attempts;
+      throw Boom.unauthorized(
+        `Invalid OTP. ${remainingAttempts} attempt(s) remaining`
+      );
+    }
+
+    // OTP verified successfully
+    // Clear OTP
+    user.clearOTP();
+    user.isVerified = true;
     user.lastLogin = new Date();
     await user.save();
 
@@ -95,6 +145,7 @@ class AuthService {
         name: user.name,
         role: user.role,
         isNewUser: user.isNewUser(),
+        isVerified: user.isVerified,
       },
       token,
     };
@@ -104,7 +155,7 @@ class AuthService {
    * Get user profile
    */
   async getProfile(userId) {
-    const user = await User.findById(userId).select('-pin');
+    const user = await User.findById(userId);
     
     if (!user) {
       throw Boom.notFound('User not found');
@@ -137,30 +188,6 @@ class AuthService {
   }
 
   /**
-   * Change PIN
-   */
-  async changePin(userId, pinData) {
-    const { oldPin, newPin } = pinData;
-
-    const user = await User.findById(userId);
-    if (!user) {
-      throw Boom.notFound('User not found');
-    }
-
-    // Verify old PIN
-    const isPinValid = await comparePassword(oldPin, user.pin);
-    if (!isPinValid) {
-      throw Boom.unauthorized('Current PIN is incorrect');
-    }
-
-    // Hash and save new PIN
-    user.pin = await hashPassword(newPin);
-    await user.save();
-
-    return { message: 'PIN changed successfully' };
-  }
-
-  /**
    * Check if phone number is available
    */
   async checkPhoneAvailability(phoneNumber) {
@@ -170,6 +197,7 @@ class AuthService {
     return {
       available: !user,
       phoneNumber: normalizedPhone,
+      exists: !!user,
     };
   }
 
@@ -189,6 +217,13 @@ class AuthService {
     }
     
     return normalized;
+  }
+
+  /**
+   * Get OTP configuration
+   */
+  getOTPConfig() {
+    return otpService.getConfig();
   }
 }
 

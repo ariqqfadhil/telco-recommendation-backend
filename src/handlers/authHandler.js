@@ -4,29 +4,38 @@ const { successResponse } = require('../utils/response');
 
 class AuthHandler {
   /**
-   * POST /api/auth/register
+   * POST /api/auth/request-otp
+   * Request OTP for login/register
    */
-  async register(request, h) {
+  async requestOTP(request, h) {
     try {
-      const result = await authService.register(request.payload);
+      const { phoneNumber, name } = request.payload;
+      const result = await authService.requestOTP(phoneNumber, name);
 
       return h.response(
-        successResponse('User registered successfully', result)
-      ).code(201);
+        successResponse(result.message, {
+          phoneNumber: result.phoneNumber,
+          isNewUser: result.isNewUser,
+          expiresIn: result.expiresIn,
+          canResendIn: result.canResendIn,
+        })
+      ).code(200);
     } catch (error) {
       if (Boom.isBoom(error)) {
         throw error;
       }
-      throw Boom.badImplementation('Registration failed');
+      throw Boom.badImplementation('Failed to send OTP');
     }
   }
 
   /**
-   * POST /api/auth/login
+   * POST /api/auth/verify-otp
+   * Verify OTP and login
    */
-  async login(request, h) {
+  async verifyOTP(request, h) {
     try {
-      const result = await authService.login(request.payload);
+      const { phoneNumber, otp } = request.payload;
+      const result = await authService.verifyOTP(phoneNumber, otp);
 
       return h.response(
         successResponse('Login successful', result)
@@ -35,7 +44,23 @@ class AuthHandler {
       if (Boom.isBoom(error)) {
         throw error;
       }
-      throw Boom.badImplementation('Login failed');
+      throw Boom.badImplementation('OTP verification failed');
+    }
+  }
+
+  /**
+   * GET /api/auth/otp-config
+   * Get OTP configuration (public)
+   */
+  async getOTPConfig(request, h) {
+    try {
+      const config = authService.getOTPConfig();
+
+      return h.response(
+        successResponse('OTP configuration retrieved', config)
+      ).code(200);
+    } catch (error) {
+      throw Boom.badImplementation('Failed to get OTP config');
     }
   }
 
@@ -74,25 +99,6 @@ class AuthHandler {
         throw error;
       }
       throw Boom.badImplementation('Failed to update profile');
-    }
-  }
-
-  /**
-   * POST /api/auth/change-pin
-   */
-  async changePin(request, h) {
-    try {
-      const { userId } = request.auth.credentials;
-      const result = await authService.changePin(userId, request.payload);
-
-      return h.response(
-        successResponse(result.message)
-      ).code(200);
-    } catch (error) {
-      if (Boom.isBoom(error)) {
-        throw error;
-      }
-      throw Boom.badImplementation('Failed to change PIN');
     }
   }
 
