@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 // Backend API Base URL - GANTI dengan URL Railway Anda
-const API_BASE_URL = 'https://telco-recommendation-backend-production.up.railway.app/';
+const API_BASE_URL = 'https://telco-recommendation-backend-production.up.railway.app';
 
 // Create axios instance
 const api = axios.create({
