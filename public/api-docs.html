@@ -845,67 +845,6 @@ curl -X GET http://localhost:5000/api/recommendations \
       </div>
     </div>
 
-    <!-- Footer -->
-    <div class="section">
-      <h2>📞 Support & Contact</h2>
-      <p><strong>Backend Developer:</strong> Muhammad Ariq Fadhil (F284D5Y1219)</p>
-      <p><strong>Team:</strong> A25-CS024 - Asah Dicoding x Accenture</p>
-      <p><strong>Project:</strong> Telco Product Recommendation System</p>
-      <p style="margin-top: 1.5rem; color: #6b7280;">
-        <strong>Version:</strong> 3.0 | <strong>Last Updated:</strong> December 2024
-      </p>
-
-      <div class="info-box" style="margin-top: 2rem;">
-        <strong>🔗 Quick Links:</strong><br>
-        • GitHub: [Your Repository]<br>
-        • Production API: [Railway URL]<br>
-        • ML Model: [Model Endpoint]<br>
-        • Status Page: GET /
-      </div>
-
-      <div class="info-box success" style="margin-top: 1rem;">
-        <strong>✅ Simple Login Benefits:</strong><br>
-        • No SMS costs (gratis!)<br>
-        • Fast development & testing<br>
-        • Low user friction<br>
-        • Auto-register new users<br>
-        • Perfect for demo & capstone
-      </div>
-    </div>
-  </div>
-
-  <script>
-    // Smooth scrolling for navigation
-    document.querySelectorAll('.sidebar a').forEach(anchor => {
-      anchor.addEventListener('click', function (e) {
-        e.preventDefault();
-        const target = document.querySelector(this.getAttribute('href'));
-        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      });
-    });
-
-    // Copy cURL commands
-    function copyCurl(type) {
-      let command = '';
-      
-      if (type === 'login') {
-        command = `curl -X POST http://localhost:5000/api/auth/login \\
-  -H "Content-Type: application/json" \\
-  -d '{"phoneNumber":"081234567890","name":"Test User"}'`;
-      }
-      
-      navigator.clipboard.writeText(command).then(() => {
-        alert('✅ cURL command copied to clipboard!');
-      }).catch(() => {
-        alert('Failed to copy. Command:\n\n' + command);
-      });
-    }
-  </script>
-</body>
-</html>>
-      </div>
-    </div>
-
     <!-- Product Endpoints Section -->
     <div class="section" id="product-endpoints">
       <h2>📦 Product Endpoints</h2>
@@ -1005,4 +944,65 @@ GET /api/products?search=unlimited</div>
             <td>number</td>
             <td>10</td>
           </tr>
-        </table
+        </table>
+
+    <!-- Footer -->
+    <div class="section">
+      <h2>📞 Support & Contact</h2>
+      <p><strong>Backend Developer:</strong> Muhammad Ariq Fadhil (F284D5Y1219)</p>
+      <p><strong>Team:</strong> A25-CS024 - Asah Dicoding x Accenture</p>
+      <p><strong>Project:</strong> Telco Product Recommendation System</p>
+      <p style="margin-top: 1.5rem; color: #6b7280;">
+        <strong>Version:</strong> 3.0 | <strong>Last Updated:</strong> December 2024
+      </p>
+
+      <div class="info-box" style="margin-top: 2rem;">
+        <strong>🔗 Quick Links:</strong><br>
+        • GitHub: [Your Repository]<br>
+        • Production API: [Railway URL]<br>
+        • ML Model: [Model Endpoint]<br>
+        • Status Page: GET /
+      </div>
+
+      <div class="info-box success" style="margin-top: 1rem;">
+        <strong>✅ Simple Login Benefits:</strong><br>
+        • No SMS costs (gratis!)<br>
+        • Fast development & testing<br>
+        • Low user friction<br>
+        • Auto-register new users<br>
+        • Perfect for demo & capstone
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Smooth scrolling for navigation
+    document.querySelectorAll('.sidebar a').forEach(anchor => {
+      anchor.addEventListener('click', function (e) {
+        e.preventDefault();
+        const target = document.querySelector(this.getAttribute('href'));
+        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
+    });
+
+    // Copy cURL commands
+    function copyCurl(type) {
+      let command = '';
+      
+      if (type === 'login') {
+        command = `curl -X POST http://localhost:5000/api/auth/login \\
+  -H "Content-Type: application/json" \\
+  -d '{"phoneNumber":"081234567890","name":"Test User"}'`;
+      }
+      
+      navigator.clipboard.writeText(command).then(() => {
+        alert('✅ cURL command copied to clipboard!');
+      }).catch(() => {
+        alert('Failed to copy. Command:\n\n' + command);
+      });
+    }
+  </script>
+</body>
+</html>>
+      </div>
+    </div>
