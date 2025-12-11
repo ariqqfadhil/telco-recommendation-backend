@@ -382,7 +382,7 @@ const products = [
   // ========== RETENTION OFFER (2 products) ==========
   {
     name: 'Loyalty Reward Silver',
-    category: 'retention',
+    category: 'combo',
     description: 'Special silver tier loyalty package',
     price: 100000,
     specifications: {
@@ -395,7 +395,7 @@ const products = [
   },
   {
     name: 'Loyalty Reward Gold',
-    category: 'retention',
+    category: 'combo',
     description: 'Premium gold tier loyalty package',
     price: 150000,
     specifications: {
