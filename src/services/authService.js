@@ -1,137 +1,45 @@
 const Boom = require('@hapi/boom');
 const User = require('../models/User');
 const { generateToken } = require('../utils/jwt');
-const otpService = require('./otpService');
 
+/**
+ * Simple Authentication Service
+ * No PIN, No OTP - Just phone number based login
+ * Perfect for demo/capstone project
+ */
 class AuthService {
   /**
-   * Request OTP - Register or Login
-   * Creates user if not exists, sends OTP
+   * Simple Login/Register
+   * Auto-register if user doesn't exist
    */
-  async requestOTP(phoneNumber, name = null) {
+  async simpleLogin(phoneNumber, name = null) {
     // Normalize phone number
     const normalizedPhone = this.normalizePhoneNumber(phoneNumber);
 
     // Find or create user
-    let user = await User.findOne({ phoneNumber: normalizedPhone })
-      .select('+otp.lastSentAt');
+    let user = await User.findOne({ phoneNumber: normalizedPhone });
 
     const isNewUser = !user;
 
     if (!user) {
-      // Create new user
+      // Auto-register new user
       user = new User({
         phoneNumber: normalizedPhone,
-        name: name || '',
+        name: name || `User ${normalizedPhone.slice(-4)}`,
         role: 'user',
-        isVerified: false,
+        isVerified: true, // Auto-verify for simple login
       });
-    }
-
-    // Check resend cooldown
-    if (!otpService.canResendOTP(user.otp?.lastSentAt)) {
-      const remaining = otpService.getRemainingCooldown(user.otp.lastSentAt);
-      throw Boom.tooManyRequests(
-        `Please wait ${remaining} seconds before requesting a new OTP`
-      );
-    }
-
-    // Generate OTP
-    const otpCode = otpService.generateOTP();
-    const expiryTime = otpService.getExpiryTime();
-
-    // Save OTP to user
-    user.otp = {
-      code: otpCode,
-      expiresAt: expiryTime,
-      attempts: 0,
-      lastSentAt: new Date(),
-    };
-
-    await user.save();
-
-    // Send OTP via SMS
-    const formattedPhone = otpService.formatPhoneNumber(normalizedPhone);
-    await otpService.sendOTP(formattedPhone, otpCode);
-
-    return {
-      message: isNewUser 
-        ? 'Account created. OTP sent to your phone' 
-        : 'OTP sent to your phone',
-      phoneNumber: normalizedPhone,
-      isNewUser,
-      expiresIn: otpService.OTP_EXPIRY_MINUTES * 60, // in seconds
-      canResendIn: otpService.RESEND_COOLDOWN_SECONDS,
-    };
-  }
-
-  /**
-   * Verify OTP and login
-   */
-  async verifyOTP(phoneNumber, otpCode) {
-    // Validate OTP format
-    if (!otpService.isValidOTPFormat(otpCode)) {
-      throw Boom.badRequest('Invalid OTP format');
-    }
-
-    // Normalize phone number
-    const normalizedPhone = this.normalizePhoneNumber(phoneNumber);
-
-    // Find user with OTP data
-    const user = await User.findOne({ phoneNumber: normalizedPhone })
-      .select('+otp.code +otp.expiresAt +otp.attempts');
-
-    if (!user) {
-      throw Boom.notFound('User not found');
-    }
-
-    // Check if user is active
-    if (!user.isActive) {
-      throw Boom.forbidden('Your account has been deactivated');
-    }
-
-    // Check if OTP exists
-    if (!user.otp?.code || !user.otp?.expiresAt) {
-      throw Boom.badRequest('No OTP found. Please request a new OTP');
-    }
-
-    // Check max attempts
-    if (user.otp.attempts >= otpService.MAX_OTP_ATTEMPTS) {
-      // Clear OTP and require new request
-      user.clearOTP();
       await user.save();
-      throw Boom.tooManyRequests(
-        'Too many failed attempts. Please request a new OTP'
-      );
+      console.log(`✅ New user auto-registered: ${normalizedPhone}`);
     }
 
-    // Check if OTP expired
-    if (new Date() > user.otp.expiresAt) {
-      user.clearOTP();
-      await user.save();
-      throw Boom.badRequest('OTP has expired. Please request a new OTP');
-    }
-
-    // Verify OTP code
-    if (!user.isOTPValid(otpCode)) {
-      // Increment attempts
-      user.incrementOTPAttempts();
-      await user.save();
-      
-      const remainingAttempts = otpService.MAX_OTP_ATTEMPTS - user.otp.attempts;
-      throw Boom.unauthorized(
-        `Invalid OTP. ${remainingAttempts} attempt(s) remaining`
-      );
-    }
-
-    // OTP verified successfully
-    // Clear OTP
-    user.clearOTP();
-    user.isVerified = true;
+    // Update last login
     user.lastLogin = new Date();
     await user.save();
 
-    // Generate token
+    console.log(`✅ User logged in: ${normalizedPhone}`);
+
+    // Generate JWT token
     const token = generateToken({
       userId: user._id,
       phoneNumber: user.phoneNumber,
@@ -144,8 +52,10 @@ class AuthService {
         phoneNumber: user.phoneNumber,
         name: user.name,
         role: user.role,
-        isNewUser: user.isNewUser(),
-        isVerified: user.isVerified,
+        isNewUser,
+        preferences: user.preferences,
+        profilePicture: user.profilePicture,
+        lastLogin: user.lastLogin,
       },
       token,
     };
@@ -159,6 +69,10 @@ class AuthService {
     
     if (!user) {
       throw Boom.notFound('User not found');
+    }
+
+    if (!user.isActive) {
+      throw Boom.forbidden('Account is deactivated');
     }
 
     return user;
@@ -183,12 +97,14 @@ class AuthService {
     });
 
     await user.save();
-
+    
+    console.log(`✅ Profile updated: ${user.phoneNumber}`);
+    
     return user;
   }
 
   /**
-   * Check if phone number is available
+   * Check if phone number exists
    */
   async checkPhoneAvailability(phoneNumber) {
     const normalizedPhone = this.normalizePhoneNumber(phoneNumber);
@@ -198,6 +114,7 @@ class AuthService {
       available: !user,
       phoneNumber: normalizedPhone,
       exists: !!user,
+      userName: user?.name || null,
     };
   }
 
@@ -220,10 +137,49 @@ class AuthService {
   }
 
   /**
-   * Get OTP configuration
+   * Admin: Get all users (for testing)
    */
-  getOTPConfig() {
-    return otpService.getConfig();
+  async getAllUsers(page = 1, limit = 20) {
+    const skip = (page - 1) * limit;
+    
+    const [users, total] = await Promise.all([
+      User.find()
+        .select('phoneNumber name role isActive lastLogin createdAt preferences')
+        .sort({ createdAt: -1 })
+        .limit(limit)
+        .skip(skip)
+        .lean(),
+      User.countDocuments(),
+    ]);
+
+    return {
+      users,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
+  }
+
+  /**
+   * Admin: Delete user
+   */
+  async deleteUser(userId) {
+    const user = await User.findById(userId);
+    
+    if (!user) {
+      throw Boom.notFound('User not found');
+    }
+
+    // Soft delete
+    user.isActive = false;
+    await user.save();
+    
+    console.log(`✅ User deactivated: ${user.phoneNumber}`);
+    
+    return user;
   }
 }
 

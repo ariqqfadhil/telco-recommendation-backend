@@ -1,5 +1,9 @@
 const mongoose = require('mongoose');
 
+/**
+ * User Model - Simple Authentication
+ * No PIN, No OTP - Just phone number based login
+ */
 const userSchema = new mongoose.Schema(
   {
     // Primary identifier: Phone number
@@ -17,32 +21,11 @@ const userSchema = new mongoose.Schema(
       }
     },
     
-    // Optional: Name (bisa diisi saat onboarding atau nanti)
+    // Name
     name: {
       type: String,
       trim: true,
       default: '',
-    },
-    
-    // OTP fields untuk authentication
-    otp: {
-      code: {
-        type: String,
-        select: false, // Don't include in query results by default
-      },
-      expiresAt: {
-        type: Date,
-        select: false,
-      },
-      attempts: {
-        type: Number,
-        default: 0,
-        select: false,
-      },
-      lastSentAt: {
-        type: Date,
-        select: false,
-      },
     },
     
     // Role for authorization
@@ -79,7 +62,7 @@ const userSchema = new mongoose.Schema(
     
     isVerified: {
       type: Boolean,
-      default: false,
+      default: true, // Auto-verified for simple login
     },
     
     // Optional: Profile picture URL
@@ -98,6 +81,10 @@ const userSchema = new mongoose.Schema(
   }
 );
 
+// Index for performance
+userSchema.index({ phoneNumber: 1 });
+userSchema.index({ role: 1, isActive: 1 });
+
 // Virtual to format phone number for display
 userSchema.virtual('formattedPhone').get(function() {
   // Format: 0812-3456-7890
@@ -110,36 +97,13 @@ userSchema.methods.isNewUser = function() {
   return !this.name || this.name === '';
 };
 
-// Method to check if OTP is valid
-userSchema.methods.isOTPValid = function(code) {
-  if (!this.otp.code || !this.otp.expiresAt) {
-    return false;
+// Set toJSON to remove sensitive fields
+userSchema.set('toJSON', {
+  virtuals: true,
+  transform: function(doc, ret) {
+    delete ret.__v;
+    return ret;
   }
-  
-  // Check if OTP expired
-  if (new Date() > this.otp.expiresAt) {
-    return false;
-  }
-  
-  // Check if code matches
-  return this.otp.code === code;
-};
-
-// Method to increment OTP attempts
-userSchema.methods.incrementOTPAttempts = function() {
-  this.otp.attempts = (this.otp.attempts || 0) + 1;
-};
-
-// Method to reset OTP attempts
-userSchema.methods.resetOTPAttempts = function() {
-  this.otp.attempts = 0;
-};
-
-// Method to clear OTP
-userSchema.methods.clearOTP = function() {
-  this.otp.code = undefined;
-  this.otp.expiresAt = undefined;
-  this.otp.attempts = 0;
-};
+});
 
 module.exports = mongoose.model('User', userSchema);

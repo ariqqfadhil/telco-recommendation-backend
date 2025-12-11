@@ -328,9 +328,9 @@
       <h1>📱 Telco Recommendation API</h1>
       <p>Complete API Documentation for Telco Product Recommendation System</p>
       <div>
-        <span class="badge">v2.1</span>
+        <span class="badge">v3.0</span>
         <span class="badge">REST API</span>
-        <span class="badge new">🔐 OTP Auth</span>
+        <span class="badge new">🚀 Simple Login</span>
         <span class="badge">40+ Products</span>
         <span class="badge">JWT Token</span>
       </div>
@@ -355,7 +355,6 @@
     
     <h3>Resources</h3>
     <ul>
-      <li><a href="#sms-gateway">📱 SMS Gateway</a></li>
       <li><a href="#error-handling">❌ Error Handling</a></li>
       <li><a href="#testing">🧪 Testing Guide</a></li>
     </ul>
@@ -401,28 +400,28 @@ Production: https://your-railway-url.up.railway.app</div>
 
       <div class="info-box success">
         <strong>✅ Total Products: 40</strong>
-        Database sekarang memiliki 40 produk lengkap yang aligned dengan ML target offers.
+        Database memiliki 40 produk lengkap yang aligned dengan ML target offers.
       </div>
     </div>
 
     <!-- What's New Section -->
     <div class="section" id="whats-new">
-      <h2>✨ What's New in v2.1</h2>
+      <h2>✨ What's New in v3.0</h2>
       
       <div class="info-box new">
-        <strong>🔐 OTP Authentication (NEW!)</strong>
-        PIN-based authentication diganti dengan OTP (One-Time Password) yang lebih secure.
+        <strong>🚀 Simple Login (NEW!)</strong>
+        Authentication sekarang menggunakan Simple Login tanpa PIN atau OTP.
         <br><br>
-        • 6-digit OTP code<br>
-        • 5 minutes expiry<br>
-        • 3 maximum attempts<br>
-        • 60 seconds cooldown between requests<br>
-        • SMS-ready (console logging for development)
+        • Login hanya dengan nomor telepon<br>
+        • Auto-register untuk user baru<br>
+        • Tidak ada biaya SMS<br>
+        • JWT token valid 7 hari<br>
+        • Perfect untuk demo dan testing
       </div>
 
       <div class="info-box success">
         <strong>📦 40 Products Available</strong>
-        Product catalog diperluas dari 16 menjadi 40 products:<br>
+        Product catalog lengkap:<br>
         • Data Booster: 10 products<br>
         • Voice Bundle: 6 products<br>
         • Roaming Pass: 4 products<br>
@@ -434,67 +433,80 @@ Production: https://your-railway-url.up.railway.app</div>
         • General Offer: 4 products
       </div>
 
-      <h3>Migration Notes</h3>
-      <p><strong>Breaking Changes:</strong></p>
+      <h3>Changes from v2.1</h3>
+      <p><strong>Removed Features:</strong></p>
       <ul style="margin-left: 2rem; margin-top: 0.5rem;">
-        <li><code>POST /api/auth/register</code> → Removed</li>
-        <li><code>POST /api/auth/login</code> → Removed</li>
-        <li><code>POST /api/auth/change-pin</code> → Removed</li>
+        <li><code>POST /api/auth/request-otp</code> → Removed</li>
+        <li><code>POST /api/auth/verify-otp</code> → Removed</li>
+        <li><code>GET /api/auth/otp-config</code> → Removed</li>
+        <li>PIN-based authentication → Removed</li>
+        <li>OTP authentication → Removed</li>
       </ul>
       <br>
-      <p><strong>New Endpoints:</strong></p>
+      <p><strong>New Features:</strong></p>
       <ul style="margin-left: 2rem; margin-top: 0.5rem;">
-        <li><code>POST /api/auth/request-otp</code> → Request OTP</li>
-        <li><code>POST /api/auth/verify-otp</code> → Verify & Login</li>
-        <li><code>GET /api/auth/otp-config</code> → Get OTP Config</li>
+        <li><code>POST /api/auth/login</code> → Simple login with phone number</li>
+        <li>Auto-register new users</li>
+        <li>No SMS costs</li>
+        <li>Faster development workflow</li>
       </ul>
     </div>
 
     <!-- Authentication Section -->
     <div class="section" id="authentication">
       <h2>🔐 Authentication</h2>
-      <p>API menggunakan <strong>OTP (One-Time Password)</strong> untuk authentication, kemudian <strong>JWT (JSON Web Token)</strong> untuk session management.</p>
+      <p>API menggunakan <strong>Simple Login</strong> untuk authentication, kemudian <strong>JWT (JSON Web Token)</strong> untuk session management.</p>
       
       <div class="info-box">
         <strong>Authentication Flow:</strong>
-        1. User memasukkan nomor telepon<br>
-        2. Backend generate & kirim OTP (6 digit)<br>
-        3. User memasukkan OTP<br>
-        4. Backend verify OTP<br>
-        5. Backend issue JWT token (valid 7 days)
+        1. User memasukkan nomor telepon (dan optional: nama)<br>
+        2. Backend check database<br>
+        3. Jika user baru → auto-register<br>
+        4. Backend issue JWT token (valid 7 days)<br>
+        5. Client store token dan gunakan untuk requests
       </div>
 
-      <h3>OTP Configuration</h3>
+      <h3>Authentication Benefits</h3>
       <table>
         <tr>
-          <th>Parameter</th>
-          <th>Value</th>
-          <th>Description</th>
+          <th>Feature</th>
+          <th>Simple Login</th>
+          <th>OTP/PIN</th>
         </tr>
         <tr>
-          <td><code>OTP Length</code></td>
-          <td>6 digits</td>
-          <td>Format OTP</td>
+          <td>Development Speed</td>
+          <td>⚡ Fast</td>
+          <td>🐌 Slow</td>
         </tr>
         <tr>
-          <td><code>Expiry Time</code></td>
-          <td>5 minutes</td>
-          <td>OTP valid duration</td>
+          <td>SMS Cost</td>
+          <td>✅ Free</td>
+          <td>💸 ~Rp 700/SMS</td>
         </tr>
         <tr>
-          <td><code>Max Attempts</code></td>
-          <td>3 times</td>
-          <td>Failed verification limit</td>
+          <td>User Friction</td>
+          <td>✅ Low (1 step)</td>
+          <td>⚠️ High (2 steps)</td>
         </tr>
         <tr>
-          <td><code>Resend Cooldown</code></td>
-          <td>60 seconds</td>
-          <td>Wait time before resend</td>
+          <td>Demo-Friendly</td>
+          <td>✅ Perfect</td>
+          <td>⚠️ Complex</td>
+        </tr>
+        <tr>
+          <td>Security</td>
+          <td>⚠️ Basic</td>
+          <td>✅ High</td>
         </tr>
       </table>
 
       <h3>JWT Header Format</h3>
       <div class="code-block">Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...</div>
+      
+      <div class="info-box warning">
+        <strong>⚠️ Production Note:</strong>
+        Untuk production deployment, dapat ditambahkan authentication yang lebih secure seperti OTP SMS, PIN, atau OAuth2.
+      </div>
     </div>
 
     <!-- Response Format Section -->
@@ -520,54 +532,19 @@ Production: https://your-railway-url.up.railway.app</div>
     <div class="section" id="auth-endpoints">
       <h2>🔑 Authentication Endpoints</h2>
 
-      <!-- Request OTP Endpoint -->
+      <!-- Simple Login Endpoint -->
       <div class="endpoint">
         <div class="endpoint-header">
           <span class="method post">POST</span>
-          <span class="endpoint-path">/api/auth/request-otp</span>
+          <span class="endpoint-path">/api/auth/login</span>
           <span class="auth-badge public">Public</span>
         </div>
-        <p><strong>Request OTP for login/register</strong></p>
+        <p><strong>Simple login with phone number (auto-register if new)</strong></p>
         
         <h4>Request Body:</h4>
         <div class="code-block">{
   <span class="key">"phoneNumber"</span>: <span class="string">"081234567890"</span>,
-  <span class="key">"name"</span>: <span class="string">"John Doe"</span> // Optional, untuk user baru
-}</div>
-
-        <h4>Success Response (200):</h4>
-        <div class="code-block">{
-  <span class="key">"status"</span>: <span class="string">"success"</span>,
-  <span class="key">"message"</span>: <span class="string">"OTP sent to your phone"</span>,
-  <span class="key">"data"</span>: {
-    <span class="key">"phoneNumber"</span>: <span class="string">"081234567890"</span>,
-    <span class="key">"isNewUser"</span>: <span class="boolean">false</span>,
-    <span class="key">"expiresIn"</span>: <span class="number">300</span>, // seconds
-    <span class="key">"canResendIn"</span>: <span class="number">60</span> // seconds
-  }
-}</div>
-
-        <div class="info-box warning">
-          <strong>⚠️ Development Mode:</strong>
-          OTP code akan di-print di console server. Di production, OTP dikirim via SMS gateway.
-        </div>
-
-        <button class="try-it-btn" onclick="copyCurl('request-otp')">📋 Copy cURL</button>
-      </div>
-
-      <!-- Verify OTP Endpoint -->
-      <div class="endpoint">
-        <div class="endpoint-header">
-          <span class="method post">POST</span>
-          <span class="endpoint-path">/api/auth/verify-otp</span>
-          <span class="auth-badge public">Public</span>
-        </div>
-        <p><strong>Verify OTP and login</strong></p>
-        
-        <h4>Request Body:</h4>
-        <div class="code-block">{
-  <span class="key">"phoneNumber"</span>: <span class="string">"081234567890"</span>,
-  <span class="key">"otp"</span>: <span class="string">"123456"</span>
+  <span class="key">"name"</span>: <span class="string">"John Doe"</span> // Optional
 }</div>
 
         <h4>Success Response (200):</h4>
@@ -581,12 +558,18 @@ Production: https://your-railway-url.up.railway.app</div>
       <span class="key">"name"</span>: <span class="string">"John Doe"</span>,
       <span class="key">"role"</span>: <span class="string">"user"</span>,
       <span class="key">"isNewUser"</span>: <span class="boolean">false</span>,
-      <span class="key">"isVerified"</span>: <span class="boolean">true</span>
+      <span class="key">"preferences"</span>: { ... }
     },
     <span class="key">"token"</span>: <span class="string">"eyJhbGciOiJIUzI1NiIs..."</span>
   }
 }</div>
-        <button class="try-it-btn" onclick="copyCurl('verify-otp')">📋 Copy cURL</button>
+
+        <div class="info-box success">
+          <strong>✅ Auto-Register:</strong>
+          Jika nomor telepon belum terdaftar, system otomatis membuat account baru dan langsung login.
+        </div>
+
+        <button class="try-it-btn" onclick="copyCurl('login')">📋 Copy cURL</button>
       </div>
 
       <!-- Get Profile Endpoint -->
@@ -617,26 +600,309 @@ Production: https://your-railway-url.up.railway.app</div>
 }</div>
       </div>
 
-      <!-- OTP Config Endpoint -->
+      <!-- Update Profile Endpoint -->
+      <div class="endpoint">
+        <div class="endpoint-header">
+          <span class="method put">PUT</span>
+          <span class="endpoint-path">/api/auth/profile</span>
+          <span class="auth-badge">Requires Auth</span>
+        </div>
+        <p><strong>Update user profile</strong></p>
+        
+        <h4>Request Body (all optional):</h4>
+        <div class="code-block">{
+  <span class="key">"name"</span>: <span class="string">"New Name"</span>,
+  <span class="key">"profilePicture"</span>: <span class="string">"https://example.com/pic.jpg"</span>,
+  <span class="key">"preferences"</span>: {
+    <span class="key">"usageType"</span>: <span class="string">"data"</span>,
+    <span class="key">"budget"</span>: <span class="string">"high"</span>,
+    <span class="key">"interests"</span>: [<span class="string">"streaming"</span>, <span class="string">"gaming"</span>]
+  }
+}</div>
+      </div>
+
+      <!-- Check Phone Endpoint -->
+      <div class="endpoint">
+        <div class="endpoint-header">
+          <span class="method post">POST</span>
+          <span class="endpoint-path">/api/auth/check-phone</span>
+          <span class="auth-badge public">Public</span>
+        </div>
+        <p><strong>Check if phone number is registered</strong></p>
+        
+        <h4>Request Body:</h4>
+        <div class="code-block">{
+  <span class="key">"phoneNumber"</span>: <span class="string">"081234567890"</span>
+}</div>
+
+        <h4>Success Response:</h4>
+        <div class="code-block">{
+  <span class="key">"status"</span>: <span class="string">"success"</span>,
+  <span class="key">"message"</span>: <span class="string">"Phone number registered as John Doe"</span>,
+  <span class="key">"data"</span>: {
+    <span class="key">"available"</span>: <span class="boolean">false</span>,
+    <span class="key">"phoneNumber"</span>: <span class="string">"081234567890"</span>,
+    <span class="key">"exists"</span>: <span class="boolean">true</span>,
+    <span class="key">"userName"</span>: <span class="string">"John Doe"</span>
+  }
+}</div>
+      </div>
+
+      <!-- Logout Endpoint -->
+      <div class="endpoint">
+        <div class="endpoint-header">
+          <span class="method post">POST</span>
+          <span class="endpoint-path">/api/auth/logout</span>
+          <span class="auth-badge">Requires Auth</span>
+        </div>
+        <p><strong>User logout</strong></p>
+        
+        <div class="info-box">
+          <strong>📝 Note:</strong>
+          Dengan JWT, logout handled di client-side dengan menghapus token dari localStorage/sessionStorage. Endpoint ini hanya untuk logging aktivitas logout.
+        </div>
+      </div>
+
+      <!-- Admin: Get Users Endpoint -->
       <div class="endpoint">
         <div class="endpoint-header">
           <span class="method get">GET</span>
-          <span class="endpoint-path">/api/auth/otp-config</span>
-          <span class="auth-badge public">Public</span>
+          <span class="endpoint-path">/api/auth/users</span>
+          <span class="auth-badge">Admin Only</span>
         </div>
-        <p><strong>Get OTP system configuration</strong></p>
+        <p><strong>Get all users (Admin only)</strong></p>
         
-        <h4>Success Response (200):</h4>
-        <div class="code-block">{
-  <span class="key">"status"</span>: <span class="string">"success"</span>,
-  <span class="key">"message"</span>: <span class="string">"OTP configuration retrieved"</span>,
-  <span class="key">"data"</span>: {
-    <span class="key">"otpLength"</span>: <span class="number">6</span>,
-    <span class="key">"expiryMinutes"</span>: <span class="number">5</span>,
-    <span class="key">"maxAttempts"</span>: <span class="number">3</span>,
-    <span class="key">"resendCooldownSeconds"</span>: <span class="number">60</span>
-  }
+        <h4>Query Parameters:</h4>
+        <table>
+          <tr>
+            <th>Parameter</th>
+            <th>Type</th>
+            <th>Default</th>
+          </tr>
+          <tr>
+            <td><code>page</code></td>
+            <td>number</td>
+            <td>1</td>
+          </tr>
+          <tr>
+            <td><code>limit</code></td>
+            <td>number</td>
+            <td>20</td>
+          </tr>
+        </table>
+      </div>
+    </div>
+
+    <!-- Recommendation Endpoints -->
+    <div class="section" id="recommendation-endpoints">
+      <h2>🎯 Recommendation Endpoints</h2>
+
+      <div class="endpoint">
+        <div class="endpoint-header">
+          <span class="method get">GET</span>
+          <span class="endpoint-path">/api/recommendations</span>
+          <span class="auth-badge">Requires Auth</span>
+        </div>
+        <p><strong>Get personalized recommendations</strong></p>
+        
+        <h4>Query Parameters:</h4>
+        <table>
+          <tr>
+            <th>Parameter</th>
+            <th>Type</th>
+            <th>Options</th>
+          </tr>
+          <tr>
+            <td><code>algorithm</code></td>
+            <td>string</td>
+            <td>collaborative, content-based, hybrid (default)</td>
+          </tr>
+          <tr>
+            <td><code>limit</code></td>
+            <td>number</td>
+            <td>1-20 (default: 5)</td>
+          </tr>
+        </table>
+
+        <div class="info-box warning">
+          <strong>⚠️ ML Model Status:</strong>
+          Currently using mock recommendations. Will automatically switch to real ML predictions when model is deployed.
+        </div>
+      </div>
+    </div>
+
+    <!-- Error Handling Section -->
+    <div class="section" id="error-handling">
+      <h2>❌ Error Handling</h2>
+      
+      <h3>HTTP Status Codes</h3>
+      <table>
+        <tr>
+          <th>Code</th>
+          <th>Meaning</th>
+          <th>When It Happens</th>
+        </tr>
+        <tr>
+          <td><code>200</code></td>
+          <td>OK</td>
+          <td>Request successful</td>
+        </tr>
+        <tr>
+          <td><code>201</code></td>
+          <td>Created</td>
+          <td>Resource created</td>
+        </tr>
+        <tr>
+          <td><code>400</code></td>
+          <td>Bad Request</td>
+          <td>Invalid input / validation error</td>
+        </tr>
+        <tr>
+          <td><code>401</code></td>
+          <td>Unauthorized</td>
+          <td>Missing/invalid token</td>
+        </tr>
+        <tr>
+          <td><code>403</code></td>
+          <td>Forbidden</td>
+          <td>No permission to access resource</td>
+        </tr>
+        <tr>
+          <td><code>404</code></td>
+          <td>Not Found</td>
+          <td>Resource doesn't exist</td>
+        </tr>
+      </table>
+
+      <h3>Error Response Examples</h3>
+      <div class="code-block">// Invalid phone number
+{
+  <span class="key">"status"</span>: <span class="string">"error"</span>,
+  <span class="key">"message"</span>: <span class="string">"Phone number must be valid Indonesian number"</span>,
+  <span class="key">"statusCode"</span>: <span class="number">400</span>
+}
+
+// Unauthorized
+{
+  <span class="key">"status"</span>: <span class="string">"error"</span>,
+  <span class="key">"message"</span>: <span class="string">"Missing authentication token"</span>,
+  <span class="key">"statusCode"</span>: <span class="number">401</span>
 }</div>
+    </div>
+
+    <!-- Testing Guide Section -->
+    <div class="section" id="testing">
+      <h2>🧪 Testing Guide</h2>
+      
+      <h3>Quick Start</h3>
+      <div class="code-block"># 1. Seed database with 40 products
+node seed-data-complete.js
+
+# 2. Start server
+npm run dev
+
+# 3. Test login
+curl -X POST http://localhost:5000/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"phoneNumber":"081234567890","name":"Test User"}'</div>
+
+      <h3>Test Accounts</h3>
+      <div class="info-box success">
+        <strong>Test Phone Numbers:</strong><br>
+        • 081234567890 (Admin)<br>
+        • 081234567891 (Regular User)<br>
+        • 081234567892 (Heavy Data User)<br>
+        • 081234567893 (Voice User)<br>
+        • 081234567894 (Budget User)<br><br>
+        <strong>Note:</strong> Login dengan nomor ini akan langsung berhasil
+      </div>
+
+      <h3>Manual Testing Flow</h3>
+      <div class="code-block"># 1. Login
+curl -X POST http://localhost:5000/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"phoneNumber":"081234567890"}'
+
+# 2. Save token from response
+TOKEN="your_token_here"
+
+# 3. Get profile
+curl -X GET http://localhost:5000/api/auth/profile \
+  -H "Authorization: Bearer $TOKEN"
+
+# 4. Get recommendations
+curl -X GET http://localhost:5000/api/recommendations \
+  -H "Authorization: Bearer $TOKEN"</div>
+
+      <h3>Postman Collection</h3>
+      <div class="info-box">
+        <strong>📥 Import to Postman:</strong><br>
+        1. Buat environment baru dengan variable:<br>
+        - <code>BASE_URL</code>: http://localhost:5000<br>
+        - <code>TOKEN</code>: (akan diisi otomatis setelah login)<br><br>
+        2. Buat request untuk setiap endpoint<br>
+        3. Test semua endpoints
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="section">
+      <h2>📞 Support & Contact</h2>
+      <p><strong>Backend Developer:</strong> Muhammad Ariq Fadhil (F284D5Y1219)</p>
+      <p><strong>Team:</strong> A25-CS024 - Asah Dicoding x Accenture</p>
+      <p><strong>Project:</strong> Telco Product Recommendation System</p>
+      <p style="margin-top: 1.5rem; color: #6b7280;">
+        <strong>Version:</strong> 3.0 | <strong>Last Updated:</strong> December 2024
+      </p>
+
+      <div class="info-box" style="margin-top: 2rem;">
+        <strong>🔗 Quick Links:</strong><br>
+        • GitHub: [Your Repository]<br>
+        • Production API: [Railway URL]<br>
+        • ML Model: [Model Endpoint]<br>
+        • Status Page: GET /
+      </div>
+
+      <div class="info-box success" style="margin-top: 1rem;">
+        <strong>✅ Simple Login Benefits:</strong><br>
+        • No SMS costs (gratis!)<br>
+        • Fast development & testing<br>
+        • Low user friction<br>
+        • Auto-register new users<br>
+        • Perfect for demo & capstone
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Smooth scrolling for navigation
+    document.querySelectorAll('.sidebar a').forEach(anchor => {
+      anchor.addEventListener('click', function (e) {
+        e.preventDefault();
+        const target = document.querySelector(this.getAttribute('href'));
+        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
+    });
+
+    // Copy cURL commands
+    function copyCurl(type) {
+      let command = '';
+      
+      if (type === 'login') {
+        command = `curl -X POST http://localhost:5000/api/auth/login \\
+  -H "Content-Type: application/json" \\
+  -d '{"phoneNumber":"081234567890","name":"Test User"}'`;
+      }
+      
+      navigator.clipboard.writeText(command).then(() => {
+        alert('✅ cURL command copied to clipboard!');
+      }).catch(() => {
+        alert('Failed to copy. Command:\n\n' + command);
+      });
+    }
+  </script>
+</body>
+</html>>
       </div>
     </div>
 
@@ -705,11 +971,6 @@ GET /api/products?category=data&limit=20
 GET /api/products?minPrice=50000&maxPrice=150000
 GET /api/products?search=unlimited</div>
 
-        <div class="info-box success">
-          <strong>📊 40 Products Available</strong>
-          Database memiliki 40 products spread across 9 target offers, siap untuk recommendation system.
-        </div>
-
         <button class="try-it-btn" onclick="window.open('http://localhost:5000/api/products', '_blank')">🚀 Try It</button>
       </div>
 
@@ -721,301 +982,27 @@ GET /api/products?search=unlimited</div>
           <span class="auth-badge public">Public</span>
         </div>
         <p><strong>Get all product categories</strong></p>
-        
-        <h4>Success Response (200):</h4>
-        <div class="code-block">{
-  <span class="key">"status"</span>: <span class="string">"success"</span>,
-  <span class="key">"data"</span>: [
-    <span class="string">"data"</span>,
-    <span class="string">"voice"</span>,
-    <span class="string">"roaming"</span>,
-    <span class="string">"streaming"</span>,
-    <span class="string">"combo"</span>,
-    <span class="string">"device"</span>
-  ]
-}</div>
       </div>
-    </div>
 
-    <!-- Recommendation Endpoints -->
-    <div class="section" id="recommendation-endpoints">
-      <h2>🎯 Recommendation Endpoints</h2>
-
+      <!-- Get Popular Products -->
       <div class="endpoint">
         <div class="endpoint-header">
           <span class="method get">GET</span>
-          <span class="endpoint-path">/api/recommendations</span>
-          <span class="auth-badge">Requires Auth</span>
+          <span class="endpoint-path">/api/products/popular/list</span>
+          <span class="auth-badge public">Public</span>
         </div>
-        <p><strong>Get personalized recommendations</strong></p>
+        <p><strong>Get popular products</strong></p>
         
         <h4>Query Parameters:</h4>
         <table>
           <tr>
             <th>Parameter</th>
             <th>Type</th>
-            <th>Options</th>
-          </tr>
-          <tr>
-            <td><code>algorithm</code></td>
-            <td>string</td>
-            <td>collaborative, content-based, hybrid (default)</td>
+            <th>Default</th>
           </tr>
           <tr>
             <td><code>limit</code></td>
             <td>number</td>
-            <td>1-20 (default: 5)</td>
+            <td>10</td>
           </tr>
-        </table>
-
-        <div class="info-box warning">
-          <strong>⚠️ ML Model Status:</strong>
-          Currently using mock recommendations. Will automatically switch to real ML predictions when model is deployed.
-        </div>
-      </div>
-    </div>
-
-    <!-- SMS Gateway Section -->
-    <div class="section" id="sms-gateway">
-      <h2>📱 SMS Gateway Integration</h2>
-      <h3>💰 Cost Comparison</h3>
-      <table>
-        <tr>
-          <th>Provider</th>
-          <th>Cost per SMS (Indonesia)</th>
-          <th>Free Trial</th>
-          <th>Rating</th>
-        </tr>
-        <tr>
-          <td><strong>Twilio</strong></td>
-          <td>~$0.045 (±Rp 700)</td>
-          <td>$15 credit</td>
-          <td>⭐⭐⭐⭐⭐ Most reliable</td>
-        </tr>
-        <tr>
-          <td><strong>Vonage/Nexmo</strong></td>
-          <td>~$0.04 (±Rp 600)</td>
-          <td>€2 credit</td>
-          <td>⭐⭐⭐⭐</td>
-        </tr>
-        <tr>
-          <td><strong>AWS SNS</strong></td>
-          <td>~$0.03 (±Rp 450)</td>
-          <td>100 SMS/month free</td>
-          <td>⭐⭐⭐⭐</td>
-        </tr>
-        <tr>
-          <td><strong>MessageBird</strong></td>
-          <td>~$0.04 (±Rp 600)</td>
-          <td>€10 credit</td>
-          <td>⭐⭐⭐⭐</td>
-        </tr>
-      </table>
-
-      <h3>🎯 Recommendations</h3>
-      <div class="info-box">
-        <strong>For Development/Testing:</strong><br>
-        • Use console logging (current implementation)<br>
-        • No cost, easy debugging<br><br>
-        
-        <strong>For Production (Budget):</strong><br>
-        • AWS SNS: 100 SMS gratis/bulan<br>
-        • After that: Rp 450/SMS<br><br>
-        
-        <strong>For Production (Professional):</strong><br>
-        • Twilio: Most reliable, best documentation<br>
-        • ~Rp 700/SMS
-      </div>
-
-      <h3>💡 FREE Alternatives</h3>
-      <ul style="margin-left: 2rem;">
-        <li><strong>Email OTP</strong> - NodeMailer/SendGrid (gratis)</li>
-        <li><strong>WhatsApp Business API</strong> - Cheaper after approval</li>
-        <li><strong>Local SMS Gateway</strong> - Buy GSM modem (~Rp 500k), unlimited</li>
-      </ul>
-
-      <h3>🔧 Integration Example (Twilio)</h3>
-      <div class="code-block">// Install: npm install twilio
-        const twilio = require('twilio');
-        const client = twilio(
-        process.env.TWILIO_ACCOUNT_SID,
-        process.env.TWILIO_AUTH_TOKEN
-        );
-        await client.messages.create({
-        body: Your OTP: ${otp}. Valid for 5 minutes.,
-        from: process.env.TWILIO_PHONE_NUMBER,
-        to: phoneNumber
-        });
-      </div>
-    </div>
-
-    <!-- Error Handling Section -->
-    <div class="section" id="error-handling">
-      <h2>❌ Error Handling</h2>
-      
-      <h3>HTTP Status Codes</h3>
-      <table>
-        <tr>
-          <th>Code</th>
-          <th>Meaning</th>
-          <th>When It Happens</th>
-        </tr>
-        <tr>
-          <td><code>200</code></td>
-          <td>OK</td>
-          <td>Request successful</td>
-        </tr>
-        <tr>
-          <td><code>201</code></td>
-          <td>Created</td>
-          <td>Resource created</td>
-        </tr>
-        <tr>
-          <td><code>400</code></td>
-          <td>Bad Request</td>
-          <td>Invalid input / validation error / OTP expired</td>
-        </tr>
-        <tr>
-          <td><code>401</code></td>
-          <td>Unauthorized</td>
-          <td>Missing/invalid token / Invalid OTP</td>
-        </tr>
-        <tr>
-          <td><code>404</code></td>
-          <td>Not Found</td>
-          <td>Resource doesn't exist</td>
-        </tr>
-        <tr>
-          <td><code>429</code></td>
-          <td>Too Many Requests</td>
-          <td>Rate limit exceeded / OTP cooldown</td>
-        </tr>
-      </table>
-
-      <h3>OTP-Specific Errors</h3>
-      <div class="code-block">// Too many OTP requests
-        {
-        <span class="key">"status"</span>: <span class="string">"error"</span>,
-        <span class="key">"message"</span>: <span class="string">"Please wait 45 seconds before requesting a new OTP"</span>,
-        <span class="key">"statusCode"</span>: <span class="number">429</span>
-        }
-        // Invalid OTP
-        {
-        <span class="key">"status"</span>: <span class="string">"error"</span>,
-        <span class="key">"message"</span>: <span class="string">"Invalid OTP. 2 attempt(s) remaining"</span>,
-        <span class="key">"statusCode"</span>: <span class="number">401</span>
-        }
-        // OTP expired
-        {
-        <span class="key">"status"</span>: <span class="string">"error"</span>,
-        <span class="key">"message"</span>: <span class="string">"OTP has expired. Please request a new OTP"</span>,
-        <span class="key">"statusCode"</span>: <span class="number">400</span>
-        }
-      </div>
-    </div>
-
-    <!-- Testing Guide Section -->
-    <div class="section" id="testing">
-      <h2>🧪 Testing Guide</h2>
-      
-      <h3>Quick Start</h3>
-      <div class="code-block"># 1. Seed database with 40 products
-        node seed-data-complete.js
-        2. Start server
-        npm run dev
-        3. Test OTP flow
-        node test-otp.js
-      </div>
-
-      <h3>Test Accounts</h3>
-      <div class="info-box success">
-        <strong>Test Phone Numbers:</strong><br>
-        • 081234567890 (Admin)<br>
-        • 081234567891 (User)<br>
-        • 081234567892 (Heavy Data User)<br><br>
-        <strong>Note:</strong> Use OTP authentication (code will be in console)
-      </div>
-
-      <h3>Manual Testing</h3>
-      <div class="code-block"># 1. Request OTP
-        curl -X POST http://localhost:5000/api/auth/request-otp 
-        -H "Content-Type: application/json" 
-        -d '{"phoneNumber":"081234567890"}'
-        2. Check console for OTP code (e.g., 123456)
-        3. Verify OTP
-        curl -X POST http://localhost:5000/api/auth/verify-otp 
-        -H "Content-Type: application/json" 
-        -d '{"phoneNumber":"081234567890","otp":"123456"}'
-        4. Use token for authenticated requests
-        curl -X GET http://localhost:5000/api/recommendations 
-        -H "Authorization: Bearer YOUR_TOKEN_HERE"
-      </div>
-
-      <h3>Expected Console Output (Development)</h3>
-      <div class="code-block">📱 Sending OTP to: 081234567890
-        🔢 OTP Code: 123456
-        ╔════════════════════════════════════╗
-        ║     OTP VERIFICATION CODE          ║
-        ║                                    ║
-        ║     Phone: 081234567890            ║
-        ║     Code:  123456                  ║
-        ║     Valid: 5 minutes               ║
-        ║                                    ║
-        ║  (This is a mock - integrate SMS)  ║
-        ╚════════════════════════════════════╝
-      </div>
-    </div>
-
-    <!-- Footer -->
-    <div class="section">
-      <h2>📞 Support & Contact</h2>
-      <p><strong>Backend Developer:</strong> Muhammad Ariq Fadhil (F284D5Y1219)</p>
-      <p><strong>Team:</strong> A25-CS024 - Asah Dicoding x Accenture</p>
-      <p><strong>Project:</strong> Telco Product Recommendation System</p>
-      <p style="margin-top: 1.5rem; color: #6b7280;">
-        <strong>Version:</strong> 2.1 | <strong>Last Updated:</strong> December 2024
-      </p>
-
-      <div class="info-box" style="margin-top: 2rem;">
-        <strong>🔗 Quick Links:</strong><br>
-        • GitHub: [Your Repository]<br>
-        • Production API: [Railway URL]<br>
-        • ML Model: [Model Endpoint]<br>
-        • Status Page: GET /
-      </div>
-    </div>
-
-    </div>
-    <script>
-      // Smooth scrolling for navigation
-      document.querySelectorAll('.sidebar a').forEach(anchor => {
-        anchor.addEventListener('click', function (e) {
-          e.preventDefault();
-          const target = document.querySelector(this.getAttribute('href'));
-          target.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        });
-      });
-
-      // Copy cURL commands
-      function copyCurl(type) {
-        let command = '';
-        
-        if (type === 'request-otp') {
-          command = `curl -X POST http://localhost:5000/api/auth/request-otp \\
-    -H "Content-Type: application/json" \\
-    -d '{"phoneNumber":"081234567890","name":"Test User"}'`;
-        } else if (type === 'verify-otp') {
-          command = `curl -X POST http://localhost:5000/api/auth/verify-otp \\
-    -H "Content-Type: application/json" \\
-    -d '{"phoneNumber":"081234567890","otp":"123456"}'`;
-        }
-        
-        navigator.clipboard.writeText(command).then(() => {
-          alert('✅ cURL command copied to clipboard!');
-        }).catch(() => {
-          alert('Failed to copy. Command:\n\n' + command);
-        });
-      }
-    </script>
-</body>
-</html</parameter>
+        </table

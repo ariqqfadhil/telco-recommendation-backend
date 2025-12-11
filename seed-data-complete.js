@@ -3,7 +3,7 @@ const mongoose = require('mongoose');
 const User = require('./src/models/User');
 const Product = require('./src/models/Product');
 
-// Sample Users (No PIN needed - will use OTP)
+// Sample Users (No PIN/OTP - Simple Login)
 const users = [
   {
     phoneNumber: '081234567890',
@@ -18,7 +18,7 @@ const users = [
   },
   {
     phoneNumber: '081234567891',
-    name: 'Test User',
+    name: 'Regular User',
     role: 'user',
     isVerified: true,
     preferences: {
@@ -35,7 +35,29 @@ const users = [
     preferences: {
       usageType: 'data',
       budget: 'high',
-      interests: ['streaming', 'gaming'],
+      interests: ['streaming', 'gaming', 'work'],
+    },
+  },
+  {
+    phoneNumber: '081234567893',
+    name: 'Voice User',
+    role: 'user',
+    isVerified: true,
+    preferences: {
+      usageType: 'voice',
+      budget: 'low',
+      interests: ['work'],
+    },
+  },
+  {
+    phoneNumber: '081234567894',
+    name: 'Budget User',
+    role: 'user',
+    isVerified: true,
+    preferences: {
+      usageType: 'mixed',
+      budget: 'low',
+      interests: ['social-media', 'browsing'],
     },
   },
 ];
@@ -360,7 +382,7 @@ const products = [
   // ========== RETENTION OFFER (2 products) ==========
   {
     name: 'Loyalty Reward Silver',
-    category: 'combo',
+    category: 'retention',
     description: 'Special silver tier loyalty package',
     price: 100000,
     specifications: {
@@ -373,7 +395,7 @@ const products = [
   },
   {
     name: 'Loyalty Reward Gold',
-    category: 'combo',
+    category: 'retention',
     description: 'Premium gold tier loyalty package',
     price: 150000,
     specifications: {
@@ -460,7 +482,7 @@ const products = [
 
 async function seedData() {
   try {
-    console.log('🌱 Starting database seeding with OTP authentication...');
+    console.log('🌱 Starting database seeding with Simple Login...');
     console.log('');
 
     // Connect to database
@@ -480,10 +502,9 @@ async function seedData() {
     const insertedUsers = await User.insertMany(users);
     console.log(`✅ Inserted ${insertedUsers.length} users`);
     console.log('');
-    console.log('📋 Test Accounts (Use OTP for login):');
+    console.log('📋 Test Accounts (Simple Login - No PIN/OTP):');
     insertedUsers.forEach(user => {
       console.log(`   - ${user.phoneNumber} (${user.role}) - ${user.name}`);
-      console.log(`     → Use OTP authentication to login`);
     });
     console.log('');
 
@@ -527,15 +548,18 @@ async function seedData() {
     console.log(`   - Categories: ${categoryCount.length}`);
     console.log(`   - Target Offers: ${targetCount.length}`);
     console.log('');
-    console.log('🔐 AUTHENTICATION FLOW:');
-    console.log('   1. POST /api/auth/request-otp');
+    console.log('🔐 SIMPLE LOGIN FLOW:');
+    console.log('   1. POST /api/auth/login');
     console.log('      { "phoneNumber": "081234567890" }');
-    console.log('   2. Check console for OTP code');
-    console.log('   3. POST /api/auth/verify-otp');
-    console.log('      { "phoneNumber": "081234567890", "otp": "123456" }');
+    console.log('   2. Receive JWT token');
+    console.log('   3. Use token for authenticated requests');
     console.log('');
-    console.log('💡 Note: OTP codes will be printed in console');
-    console.log('   (In production, integrate SMS gateway)');
+    console.log('💡 Features:');
+    console.log('   ✅ No PIN required');
+    console.log('   ✅ No OTP required (no SMS cost)');
+    console.log('   ✅ Auto-register new users');
+    console.log('   ✅ JWT token valid for 7 days');
+    console.log('   ✅ Perfect for demo/testing');
     console.log('═══════════════════════════════════════════════════');
 
     process.exit(0);

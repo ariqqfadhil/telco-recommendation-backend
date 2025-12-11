@@ -2,70 +2,42 @@ const Boom = require('@hapi/boom');
 const authService = require('../services/authService');
 const { successResponse } = require('../utils/response');
 
+/**
+ * Simple Authentication Handler
+ * No PIN, No OTP - Just phone number based login
+ */
 class AuthHandler {
   /**
-   * POST /api/auth/request-otp
-   * Request OTP for login/register
+   * POST /api/auth/login
+   * Simple login with phone number (auto-register if new)
    */
-  async requestOTP(request, h) {
+  async simpleLogin(request, h) {
     try {
       const { phoneNumber, name } = request.payload;
-      const result = await authService.requestOTP(phoneNumber, name);
+      
+      console.log(`🔐 Login attempt: ${phoneNumber}`);
+      
+      const result = await authService.simpleLogin(phoneNumber, name);
+
+      const message = result.user.isNewUser 
+        ? 'Account created and logged in successfully' 
+        : 'Login successful';
 
       return h.response(
-        successResponse(result.message, {
-          phoneNumber: result.phoneNumber,
-          isNewUser: result.isNewUser,
-          expiresIn: result.expiresIn,
-          canResendIn: result.canResendIn,
-        })
+        successResponse(message, result)
       ).code(200);
     } catch (error) {
+      console.error('❌ Login error:', error);
       if (Boom.isBoom(error)) {
         throw error;
       }
-      throw Boom.badImplementation('Failed to send OTP');
-    }
-  }
-
-  /**
-   * POST /api/auth/verify-otp
-   * Verify OTP and login
-   */
-  async verifyOTP(request, h) {
-    try {
-      const { phoneNumber, otp } = request.payload;
-      const result = await authService.verifyOTP(phoneNumber, otp);
-
-      return h.response(
-        successResponse('Login successful', result)
-      ).code(200);
-    } catch (error) {
-      if (Boom.isBoom(error)) {
-        throw error;
-      }
-      throw Boom.badImplementation('OTP verification failed');
-    }
-  }
-
-  /**
-   * GET /api/auth/otp-config
-   * Get OTP configuration (public)
-   */
-  async getOTPConfig(request, h) {
-    try {
-      const config = authService.getOTPConfig();
-
-      return h.response(
-        successResponse('OTP configuration retrieved', config)
-      ).code(200);
-    } catch (error) {
-      throw Boom.badImplementation('Failed to get OTP config');
+      throw Boom.badImplementation('Login failed');
     }
   }
 
   /**
    * GET /api/auth/profile
+   * Get user profile
    */
   async getProfile(request, h) {
     try {
@@ -85,6 +57,7 @@ class AuthHandler {
 
   /**
    * PUT /api/auth/profile
+   * Update user profile
    */
   async updateProfile(request, h) {
     try {
@@ -104,6 +77,7 @@ class AuthHandler {
 
   /**
    * POST /api/auth/check-phone
+   * Check if phone number is registered
    */
   async checkPhoneAvailability(request, h) {
     try {
@@ -111,8 +85,12 @@ class AuthHandler {
         request.payload.phoneNumber
       );
 
+      const message = result.exists 
+        ? `Phone number registered as ${result.userName}`
+        : 'Phone number available (will auto-register on login)';
+
       return h.response(
-        successResponse('Phone number checked', result)
+        successResponse(message, result)
       ).code(200);
     } catch (error) {
       throw Boom.badImplementation('Failed to check phone availability');
@@ -121,13 +99,59 @@ class AuthHandler {
 
   /**
    * POST /api/auth/logout
+   * User logout (client-side)
    */
   async logout(request, h) {
     // Dengan JWT, logout biasanya handled di client side
     // Tapi kita bisa log aktivitas logout di server
+    const { userId, phoneNumber } = request.auth.credentials;
+    
+    console.log(`👋 User logout: ${phoneNumber} (${userId})`);
+    
     return h.response(
-      successResponse('Logout successful')
+      successResponse('Logout successful', {
+        message: 'Token removed from client. Please delete token from local storage.',
+      })
     ).code(200);
+  }
+
+  /**
+   * GET /api/auth/users
+   * Get all users (Admin only)
+   */
+  async getAllUsers(request, h) {
+    try {
+      const { page = 1, limit = 20 } = request.query;
+      
+      const result = await authService.getAllUsers(page, limit);
+
+      return h.response(
+        successResponse('Users retrieved successfully', result)
+      ).code(200);
+    } catch (error) {
+      console.error('Get users error:', error);
+      throw Boom.badImplementation('Failed to retrieve users');
+    }
+  }
+
+  /**
+   * DELETE /api/auth/users/{id}
+   * Delete user (Admin only)
+   */
+  async deleteUser(request, h) {
+    try {
+      const { id } = request.params;
+      const user = await authService.deleteUser(id);
+
+      return h.response(
+        successResponse('User deactivated successfully', user)
+      ).code(200);
+    } catch (error) {
+      if (Boom.isBoom(error)) {
+        throw error;
+      }
+      throw Boom.badImplementation('Failed to delete user');
+    }
   }
 }
 
