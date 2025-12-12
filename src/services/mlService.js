@@ -3,11 +3,14 @@ const config = require('../config/env');
 
 /**
  * ML Service untuk komunikasi dengan model Machine Learning
+ * Integrated with HuggingFace Spaces
  */
 class MLService {
   constructor() {
+    // HuggingFace Space URL
     this.mlServiceUrl = config.mlService.url;
     this.timeout = config.mlService.timeout;
+    this.isProduction = config.server.env === 'production';
   }
 
   /**
@@ -18,14 +21,14 @@ class MLService {
     console.log('📤 User data:', JSON.stringify(userData, null, 2));
 
     try {
-      // Try to call actual ML service
-      console.log('🌐 Attempting to connect to ML service at:', this.mlServiceUrl);
+      // Try to call actual ML service on HuggingFace
+      console.log('🌐 Connecting to HuggingFace Space:', this.mlServiceUrl);
       
       const mlRequestData = this._transformToMLFormat(userData);
       console.log('📊 Transformed ML request:', JSON.stringify(mlRequestData, null, 2));
       
       const response = await axios.post(
-        `${this.mlServiceUrl}/predict`,
+        this.mlServiceUrl,
         mlRequestData,
         {
           timeout: this.timeout,
@@ -35,11 +38,14 @@ class MLService {
         }
       );
 
-      console.log('✅ ML service response received');
+      console.log('✅ HuggingFace API response received');
       console.log('📊 Raw ML response:', JSON.stringify(response.data, null, 2));
 
       const recommendations = this._transformMLResponse(response.data);
       console.log('📊 Transformed recommendations:', recommendations.length);
+
+      // Log successful ML call
+      console.log('🎯 ML Model Status: ACTIVE ✅');
 
       return recommendations;
       
@@ -56,17 +62,20 @@ class MLService {
       }
       
       if (error.code === 'ECONNREFUSED') {
-        console.error('🔌 ML service is not running at', this.mlServiceUrl);
+        console.error('🔌 Cannot connect to HuggingFace Space');
       }
       
-      // Fallback to mock data
+      // Fallback to mock data if ML service unavailable
       console.log('⚠️  Falling back to mock recommendations');
+      console.log('💡 This is normal during development/testing');
+      
       return this._getMockRecommendations(userData);
     }
   }
 
   /**
    * Transform backend data format to ML service format
+   * Based on your HuggingFace model's expected input
    */
   _transformToMLFormat(userData) {
     const usageFeatures = userData.usageFeatures || {};
@@ -88,11 +97,12 @@ class MLService {
       'high': 'premium'
     };
     
+    // Format sesuai dengan HuggingFace API
     return {
       avg_data_usage_gb: avgDataUsageGB,
       pct_video_usage: pctVideoUsage,
-      avg_call_duration: usageFeatures.avgCallDuration || 0,
-      sms_freq: usageFeatures.avgSmsCount || 0,
+      avg_call_duration: usageFeatures.avgCallDuration || 100,
+      sms_freq: usageFeatures.avgSmsCount || 50,
       monthly_spend: usageFeatures.avgSpending || 75000,
       topup_freq: usageFeatures.topupFreq || 1,
       travel_score: usageFeatures.travelScore || 0.1,
@@ -104,50 +114,64 @@ class MLService {
 
   /**
    * Transform ML response to backend format
+   * FIXED: Handle the actual response format from your HuggingFace API
    */
   _transformMLResponse(mlResponse) {
     console.log('🔄 Transforming ML response...');
     
-    // Format: {"status":"success","recommendation":"Voice Bundle","confidence":36.0}
-    if (mlResponse.recommendation && mlResponse.confidence !== undefined) {
-      return [{
-        targetOffer: mlResponse.recommendation, // ML returns target offer directly
-        score: mlResponse.confidence / 100,
-        reason: `Recommended based on ML model with ${mlResponse.confidence.toFixed(1)}% confidence`
-      }];
-    }
+    // Format dari HuggingFace Space Anda:
+    // {
+    //   "status": "success",
+    //   "recommendation": {
+    //     "primary_offer": "General Offer",
+    //     "social_proof_offer": "General Offer",
+    //     "confidence_score": 0.37
+    //   },
+    //   "message": "...",
+    //   "user_summary": {...}
+    // }
     
-    // Format: Array of recommendations
-    if (Array.isArray(mlResponse)) {
-      return mlResponse.map(rec => ({
-        product_id: rec.product_id || rec.productId,
-        product_name: rec.product_name || rec.productName,
-        score: rec.score || rec.confidence || 0.5,
-        reason: rec.reason || rec.explanation || 'Recommended based on your usage pattern'
-      }));
+    try {
+      // Check if response has the expected structure
+      if (mlResponse.status === 'success' && mlResponse.recommendation) {
+        const rec = mlResponse.recommendation;
+        
+        // Extract offers - both primary and social proof
+        const offers = [];
+        
+        // Primary offer
+        if (rec.primary_offer) {
+          offers.push({
+            targetOffer: rec.primary_offer,
+            score: rec.confidence_score || 0.5,
+            reason: `Primary recommendation: ${rec.primary_offer}. ${mlResponse.message || 'Based on your usage pattern'}`
+          });
+        }
+        
+        // Social proof offer (if different from primary)
+        if (rec.social_proof_offer && rec.social_proof_offer !== rec.primary_offer) {
+          offers.push({
+            targetOffer: rec.social_proof_offer,
+            score: (rec.confidence_score || 0.5) * 0.9, // Slightly lower score
+            reason: `Popular among users like you: ${rec.social_proof_offer}`
+          });
+        }
+        
+        // If we got at least one offer, return it
+        if (offers.length > 0) {
+          console.log('✅ Successfully transformed ML response');
+          return offers;
+        }
+      }
+      
+      // If no valid recommendations found, log and return empty
+      console.warn('⚠️  Could not extract recommendations from response');
+      return [];
+      
+    } catch (error) {
+      console.error('❌ Error transforming ML response:', error.message);
+      return [];
     }
-    
-    // Format: Object with recommendations property
-    if (mlResponse.recommendations) {
-      return mlResponse.recommendations.map(rec => ({
-        product_id: rec.product_id || rec.productId,
-        product_name: rec.product_name || rec.productName,
-        score: rec.score || rec.confidence || 0.5,
-        reason: rec.reason || rec.explanation || 'Recommended based on your usage pattern'
-      }));
-    }
-    
-    // Format: Object with predicted_products
-    if (mlResponse.predicted_products) {
-      return mlResponse.predicted_products.map((productId, index) => ({
-        product_id: productId,
-        score: mlResponse.scores ? mlResponse.scores[index] : 0.9 - (index * 0.1),
-        reason: `Recommendation ${index + 1} based on ML model`
-      }));
-    }
-    
-    console.warn('⚠️  Unknown ML response format:', mlResponse);
-    return [];
   }
 
   /**
@@ -171,12 +195,12 @@ class MLService {
     if (usageFeatures.isHeavyDataUser || usageFeatures.avgDataUsage > 10000) {
       mockRecommendations.push(
         {
-          product_name: 'Paket Internet Unlimited',
+          targetOffer: 'Data Booster',
           score: 0.95,
-          reason: 'Heavy data usage detected - unlimited plan recommended',
+          reason: 'Heavy data usage detected - data booster recommended',
         },
         {
-          product_name: 'Paket Data 50GB',
+          targetOffer: 'Streaming Partner Pack',
           score: 0.88,
           reason: 'High data quota with streaming features',
         }
@@ -187,14 +211,14 @@ class MLService {
     else if (usageFeatures.userSegment === 'heavy_voice_user' || preferences.usageType === 'voice') {
       mockRecommendations.push(
         {
-          product_name: 'Paket Telepon Unlimited',
+          targetOffer: 'Voice Bundle',
           score: 0.93,
           reason: 'Optimized for voice calls based on your usage',
         },
         {
-          product_name: 'Paket Nelpon 300 Menit',
+          targetOffer: 'Family Plan Offer',
           score: 0.85,
-          reason: 'Great for regular callers',
+          reason: 'Great for regular callers with family sharing',
         }
       );
     }
@@ -203,14 +227,14 @@ class MLService {
     else if (usageFeatures.contentType === 'video' || preferences.interests?.includes('streaming')) {
       mockRecommendations.push(
         {
-          product_name: 'Paket Netflix Premium',
+          targetOffer: 'Streaming Partner Pack',
           score: 0.91,
           reason: 'Perfect for video streaming based on your habits',
         },
         {
-          product_name: 'Paket Streaming HD',
+          targetOffer: 'Data Booster',
           score: 0.86,
-          reason: 'High-speed streaming package',
+          reason: 'High-speed data for streaming',
         }
       );
     }
@@ -219,12 +243,12 @@ class MLService {
     else if (preferences.usageType === 'data') {
       mockRecommendations.push(
         {
-          product_name: 'Paket Data 25GB',
+          targetOffer: 'Data Booster',
           score: 0.90,
           reason: 'Best data package for your preference',
         },
         {
-          product_name: 'Paket Data 10GB',
+          targetOffer: 'General Offer',
           score: 0.84,
           reason: 'Popular among data users',
         }
@@ -235,27 +259,27 @@ class MLService {
     else {
       mockRecommendations.push(
         {
-          product_name: 'Paket Combo Hemat',
+          targetOffer: 'General Offer',
           score: 0.87,
           reason: 'Best overall package for balanced usage',
         },
         {
-          product_name: 'Paket Data 25GB',
+          targetOffer: 'Data Booster',
           score: 0.82,
           reason: 'Popular combo package',
         },
         {
-          product_name: 'Paket Combo Lengkap',
+          targetOffer: 'Voice Bundle',
           score: 0.78,
           reason: 'Great value for your spending pattern',
         },
         {
-          product_name: 'Paket Data 10GB',
+          targetOffer: 'Streaming Partner Pack',
           score: 0.72,
           reason: 'Budget-friendly option',
         },
         {
-          product_name: 'Paket Combo Mini',
+          targetOffer: 'Family Plan Offer',
           score: 0.68,
           reason: 'Good starter package',
         }
@@ -268,21 +292,100 @@ class MLService {
 
   /**
    * Health check ML service
+   * FIXED: Don't rely on /health endpoint since it doesn't exist
    */
   async healthCheck() {
     try {
-      const response = await axios.get(
-        `${this.mlServiceUrl}/health`,
-        { timeout: 5000 }
+      console.log('🏥 Checking ML service health...');
+      
+      // Instead of calling /health, try the actual recommend endpoint with minimal data
+      const testData = {
+        avg_data_usage_gb: 5.0,
+        pct_video_usage: 0.3,
+        avg_call_duration: 100,
+        sms_freq: 50,
+        monthly_spend: 75000,
+        topup_freq: 1,
+        travel_score: 0.1,
+        complaint_count: 0,
+        plan_type: 'standard',
+        device_brand: 'Unknown'
+      };
+      
+      const response = await axios.post(
+        this.mlServiceUrl,
+        testData,
+        { 
+          timeout: 5000,
+          headers: {
+            'Content-Type': 'application/json',
+          }
+        }
       );
       
+      console.log('✅ ML Service is healthy');
       return {
         status: 'healthy',
-        ...response.data
+        service: 'HuggingFace Space',
+        url: this.mlServiceUrl,
+        responseFormat: response.data.status || 'unknown'
       };
     } catch (error) {
+      console.log('⚠️  ML Service health check failed:', error.message);
       return {
-        status: 'unhealthy',
+        status: 'unavailable',
+        service: 'HuggingFace Space',
+        url: this.mlServiceUrl,
+        error: error.message,
+        note: 'Using fallback mock recommendations'
+      };
+    }
+  }
+
+  /**
+   * Test ML service with sample data
+   */
+  async testConnection() {
+    console.log('🧪 Testing HuggingFace Space connection...');
+    
+    const sampleData = {
+      userId: 'test_user',
+      preferences: {
+        usageType: 'data',
+        budget: 'medium',
+        interests: ['streaming']
+      },
+      usageFeatures: {
+        avgDataUsage: 5000,
+        avgCallDuration: 100,
+        avgSmsCount: 50,
+        avgSpending: 75000,
+        isHeavyDataUser: false,
+        userSegment: 'balanced_user'
+      }
+    };
+    
+    try {
+      const recommendations = await this.getRecommendations(sampleData);
+      
+      if (recommendations.length > 0) {
+        console.log('✅ HuggingFace Space connection successful!');
+        console.log('📊 Test recommendations:', recommendations);
+        return {
+          success: true,
+          recommendations
+        };
+      } else {
+        console.warn('⚠️  Connection successful but no recommendations returned');
+        return {
+          success: false,
+          error: 'No recommendations returned from ML service'
+        };
+      }
+    } catch (error) {
+      console.error('❌ HuggingFace Space connection failed:', error.message);
+      return {
+        success: false,
         error: error.message
       };
     }

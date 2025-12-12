@@ -790,61 +790,6 @@ Production: https://your-railway-url.up.railway.app</div>
 }</div>
     </div>
 
-    <!-- Testing Guide Section -->
-    <div class="section" id="testing">
-      <h2>🧪 Testing Guide</h2>
-      
-      <h3>Quick Start</h3>
-      <div class="code-block"># 1. Seed database with 40 products
-node seed-data-complete.js
-
-# 2. Start server
-npm run dev
-
-# 3. Test login
-curl -X POST http://localhost:5000/api/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"phoneNumber":"081234567890","name":"Test User"}'</div>
-
-      <h3>Test Accounts</h3>
-      <div class="info-box success">
-        <strong>Test Phone Numbers:</strong><br>
-        • 081234567890 (Admin)<br>
-        • 081234567891 (Regular User)<br>
-        • 081234567892 (Heavy Data User)<br>
-        • 081234567893 (Voice User)<br>
-        • 081234567894 (Budget User)<br><br>
-        <strong>Note:</strong> Login dengan nomor ini akan langsung berhasil
-      </div>
-
-      <h3>Manual Testing Flow</h3>
-      <div class="code-block"># 1. Login
-curl -X POST http://localhost:5000/api/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"phoneNumber":"081234567890"}'
-
-# 2. Save token from response
-TOKEN="your_token_here"
-
-# 3. Get profile
-curl -X GET http://localhost:5000/api/auth/profile \
-  -H "Authorization: Bearer $TOKEN"
-
-# 4. Get recommendations
-curl -X GET http://localhost:5000/api/recommendations \
-  -H "Authorization: Bearer $TOKEN"</div>
-
-      <h3>Postman Collection</h3>
-      <div class="info-box">
-        <strong>📥 Import to Postman:</strong><br>
-        1. Buat environment baru dengan variable:<br>
-        - <code>BASE_URL</code>: http://localhost:5000<br>
-        - <code>TOKEN</code>: (akan diisi otomatis setelah login)<br><br>
-        2. Buat request untuk setiap endpoint<br>
-        3. Test semua endpoints
-      </div>
-    </div>
-
     <!-- Product Endpoints Section -->
     <div class="section" id="product-endpoints">
       <h2>📦 Product Endpoints</h2>
@@ -945,6 +890,61 @@ GET /api/products?search=unlimited</div>
             <td>10</td>
           </tr>
         </table>
+
+    <!-- Testing Guide Section -->
+    <div class="section" id="testing">
+      <h2>🧪 Testing Guide</h2>
+      
+      <h3>Quick Start</h3>
+      <div class="code-block"># 1. Seed database with 40 products
+node seed-data-complete.js
+
+# 2. Start server
+npm run dev
+
+# 3. Test login
+curl -X POST http://localhost:5000/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"phoneNumber":"081234567890","name":"Test User"}'</div>
+
+      <h3>Test Accounts</h3>
+      <div class="info-box success">
+        <strong>Test Phone Numbers:</strong><br>
+        • 081234567890 (Admin)<br>
+        • 081234567891 (Regular User)<br>
+        • 081234567892 (Heavy Data User)<br>
+        • 081234567893 (Voice User)<br>
+        • 081234567894 (Budget User)<br><br>
+        <strong>Note:</strong> Login dengan nomor ini akan langsung berhasil
+      </div>
+
+      <h3>Manual Testing Flow</h3>
+      <div class="code-block"># 1. Login
+curl -X POST http://localhost:5000/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"phoneNumber":"081234567890"}'
+
+# 2. Save token from response
+TOKEN="your_token_here"
+
+# 3. Get profile
+curl -X GET http://localhost:5000/api/auth/profile \
+  -H "Authorization: Bearer $TOKEN"
+
+# 4. Get recommendations
+curl -X GET http://localhost:5000/api/recommendations \
+  -H "Authorization: Bearer $TOKEN"</div>
+
+      <h3>Postman Collection</h3>
+      <div class="info-box">
+        <strong>📥 Import to Postman:</strong><br>
+        1. Buat environment baru dengan variable:<br>
+        - <code>BASE_URL</code>: http://localhost:5000<br>
+        - <code>TOKEN</code>: (akan diisi otomatis setelah login)<br><br>
+        2. Buat request untuk setiap endpoint<br>
+        3. Test semua endpoints
+      </div>
+    </div>
 
     <!-- Footer -->
     <div class="section">
