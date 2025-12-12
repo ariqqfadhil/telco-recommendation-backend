@@ -693,103 +693,6 @@ Production: https://your-railway-url.up.railway.app</div>
       </div>
     </div>
 
-    <!-- Recommendation Endpoints -->
-    <div class="section" id="recommendation-endpoints">
-      <h2>🎯 Recommendation Endpoints</h2>
-
-      <div class="endpoint">
-        <div class="endpoint-header">
-          <span class="method get">GET</span>
-          <span class="endpoint-path">/api/recommendations</span>
-          <span class="auth-badge">Requires Auth</span>
-        </div>
-        <p><strong>Get personalized recommendations</strong></p>
-        
-        <h4>Query Parameters:</h4>
-        <table>
-          <tr>
-            <th>Parameter</th>
-            <th>Type</th>
-            <th>Options</th>
-          </tr>
-          <tr>
-            <td><code>algorithm</code></td>
-            <td>string</td>
-            <td>collaborative, content-based, hybrid (default)</td>
-          </tr>
-          <tr>
-            <td><code>limit</code></td>
-            <td>number</td>
-            <td>1-20 (default: 5)</td>
-          </tr>
-        </table>
-
-        <div class="info-box warning">
-          <strong>⚠️ ML Model Status:</strong>
-          Currently using mock recommendations. Will automatically switch to real ML predictions when model is deployed.
-        </div>
-      </div>
-    </div>
-
-    <!-- Error Handling Section -->
-    <div class="section" id="error-handling">
-      <h2>❌ Error Handling</h2>
-      
-      <h3>HTTP Status Codes</h3>
-      <table>
-        <tr>
-          <th>Code</th>
-          <th>Meaning</th>
-          <th>When It Happens</th>
-        </tr>
-        <tr>
-          <td><code>200</code></td>
-          <td>OK</td>
-          <td>Request successful</td>
-        </tr>
-        <tr>
-          <td><code>201</code></td>
-          <td>Created</td>
-          <td>Resource created</td>
-        </tr>
-        <tr>
-          <td><code>400</code></td>
-          <td>Bad Request</td>
-          <td>Invalid input / validation error</td>
-        </tr>
-        <tr>
-          <td><code>401</code></td>
-          <td>Unauthorized</td>
-          <td>Missing/invalid token</td>
-        </tr>
-        <tr>
-          <td><code>403</code></td>
-          <td>Forbidden</td>
-          <td>No permission to access resource</td>
-        </tr>
-        <tr>
-          <td><code>404</code></td>
-          <td>Not Found</td>
-          <td>Resource doesn't exist</td>
-        </tr>
-      </table>
-
-      <h3>Error Response Examples</h3>
-      <div class="code-block">// Invalid phone number
-{
-  <span class="key">"status"</span>: <span class="string">"error"</span>,
-  <span class="key">"message"</span>: <span class="string">"Phone number must be valid Indonesian number"</span>,
-  <span class="key">"statusCode"</span>: <span class="number">400</span>
-}
-
-// Unauthorized
-{
-  <span class="key">"status"</span>: <span class="string">"error"</span>,
-  <span class="key">"message"</span>: <span class="string">"Missing authentication token"</span>,
-  <span class="key">"statusCode"</span>: <span class="number">401</span>
-}</div>
-    </div>
-
     <!-- Product Endpoints Section -->
     <div class="section" id="product-endpoints">
       <h2>📦 Product Endpoints</h2>
@@ -890,6 +793,103 @@ GET /api/products?search=unlimited</div>
             <td>10</td>
           </tr>
         </table>
+
+    <!-- Recommendation Endpoints -->
+    <div class="section" id="recommendation-endpoints">
+      <h2>🎯 Recommendation Endpoints</h2>
+
+      <div class="endpoint">
+        <div class="endpoint-header">
+          <span class="method get">GET</span>
+          <span class="endpoint-path">/api/recommendations</span>
+          <span class="auth-badge">Requires Auth</span>
+        </div>
+        <p><strong>Get personalized recommendations</strong></p>
+        
+        <h4>Query Parameters:</h4>
+        <table>
+          <tr>
+            <th>Parameter</th>
+            <th>Type</th>
+            <th>Options</th>
+          </tr>
+          <tr>
+            <td><code>algorithm</code></td>
+            <td>string</td>
+            <td>collaborative, content-based, hybrid (default)</td>
+          </tr>
+          <tr>
+            <td><code>limit</code></td>
+            <td>number</td>
+            <td>1-20 (default: 5)</td>
+          </tr>
+        </table>
+
+        <div class="info-box warning">
+          <strong>⚠️ ML Model Status:</strong>
+          Currently using mock recommendations. Will automatically switch to real ML predictions when model is deployed.
+        </div>
+      </div>
+    </div>
+
+    <!-- Error Handling Section -->
+    <div class="section" id="error-handling">
+      <h2>❌ Error Handling</h2>
+      
+      <h3>HTTP Status Codes</h3>
+      <table>
+        <tr>
+          <th>Code</th>
+          <th>Meaning</th>
+          <th>When It Happens</th>
+        </tr>
+        <tr>
+          <td><code>200</code></td>
+          <td>OK</td>
+          <td>Request successful</td>
+        </tr>
+        <tr>
+          <td><code>201</code></td>
+          <td>Created</td>
+          <td>Resource created</td>
+        </tr>
+        <tr>
+          <td><code>400</code></td>
+          <td>Bad Request</td>
+          <td>Invalid input / validation error</td>
+        </tr>
+        <tr>
+          <td><code>401</code></td>
+          <td>Unauthorized</td>
+          <td>Missing/invalid token</td>
+        </tr>
+        <tr>
+          <td><code>403</code></td>
+          <td>Forbidden</td>
+          <td>No permission to access resource</td>
+        </tr>
+        <tr>
+          <td><code>404</code></td>
+          <td>Not Found</td>
+          <td>Resource doesn't exist</td>
+        </tr>
+      </table>
+
+      <h3>Error Response Examples</h3>
+      <div class="code-block">// Invalid phone number
+{
+  <span class="key">"status"</span>: <span class="string">"error"</span>,
+  <span class="key">"message"</span>: <span class="string">"Phone number must be valid Indonesian number"</span>,
+  <span class="key">"statusCode"</span>: <span class="number">400</span>
+}
+
+// Unauthorized
+{
+  <span class="key">"status"</span>: <span class="string">"error"</span>,
+  <span class="key">"message"</span>: <span class="string">"Missing authentication token"</span>,
+  <span class="key">"statusCode"</span>: <span class="number">401</span>
+}</div>
+    </div>
 
     <!-- Testing Guide Section -->
     <div class="section" id="testing">
