@@ -2,30 +2,35 @@ const axios = require('axios');
 const config = require('../config/env');
 
 /**
- * ML Service untuk komunikasi dengan model Machine Learning
- * Integrated with HuggingFace Spaces
+ * ML Service untuk komunikasi dengan HuggingFace Space
+ * PRODUCTION READY - Integrated with deployed model
  */
 class MLService {
   constructor() {
-    // HuggingFace Space URL
+    // HuggingFace Space URL (Production)
     this.mlServiceUrl = config.mlService.url;
     this.timeout = config.mlService.timeout;
     this.isProduction = config.server.env === 'production';
+    
+    console.log('🤖 ML Service initialized');
+    console.log(`📍 Model URL: ${this.mlServiceUrl}`);
   }
 
   /**
    * Get product recommendations for user
+   * Main method yang dipanggil dari recommendationHandler
    */
   async getRecommendations(userData) {
     console.log('🤖 MLService.getRecommendations called');
     console.log('📤 User data:', JSON.stringify(userData, null, 2));
 
     try {
-      // Try to call actual ML service on HuggingFace
-      console.log('🌐 Connecting to HuggingFace Space:', this.mlServiceUrl);
-      
+      // Transform data ke format yang dibutuhkan HuggingFace model
       const mlRequestData = this._transformToMLFormat(userData);
       console.log('📊 Transformed ML request:', JSON.stringify(mlRequestData, null, 2));
+      
+      // Call HuggingFace Space API
+      console.log('🌐 Calling HuggingFace Space:', this.mlServiceUrl);
       
       const response = await axios.post(
         this.mlServiceUrl,
@@ -41,11 +46,13 @@ class MLService {
       console.log('✅ HuggingFace API response received');
       console.log('📊 Raw ML response:', JSON.stringify(response.data, null, 2));
 
+      // Transform response ke format backend
       const recommendations = this._transformMLResponse(response.data);
       console.log('📊 Transformed recommendations:', recommendations.length);
 
       // Log successful ML call
       console.log('🎯 ML Model Status: ACTIVE ✅');
+      console.log(`📦 Recommendations: ${recommendations.length} offers`);
 
       return recommendations;
       
@@ -53,8 +60,8 @@ class MLService {
       console.error('❌ ML Service Error:', error.message);
       
       if (error.response) {
-        console.error('📛 ML Response Error:', JSON.stringify(error.response.data, null, 2));
-        console.error('📛 Status:', error.response.status);
+        console.error('📛 ML Response Error:', error.response.status);
+        console.error('📛 Error data:', JSON.stringify(error.response.data, null, 2));
       }
       
       if (error.code === 'ECONNABORTED') {
@@ -67,7 +74,7 @@ class MLService {
       
       // Fallback to mock data if ML service unavailable
       console.log('⚠️  Falling back to mock recommendations');
-      console.log('💡 This is normal during development/testing');
+      console.log('💡 This indicates ML service is temporarily unavailable');
       
       return this._getMockRecommendations(userData);
     }
@@ -75,7 +82,7 @@ class MLService {
 
   /**
    * Transform backend data format to ML service format
-   * Based on your HuggingFace model's expected input
+   * Sesuai dengan input yang dibutuhkan model HuggingFace
    */
   _transformToMLFormat(userData) {
     const usageFeatures = userData.usageFeatures || {};
@@ -97,7 +104,7 @@ class MLService {
       'high': 'premium'
     };
     
-    // Format sesuai dengan HuggingFace API
+    // Format sesuai dengan API HuggingFace
     return {
       avg_data_usage_gb: avgDataUsageGB,
       pct_video_usage: pctVideoUsage,
@@ -114,29 +121,26 @@ class MLService {
 
   /**
    * Transform ML response to backend format
-   * FIXED: Handle the actual response format from your HuggingFace API
+   * Menghandle response dari HuggingFace Space
    */
   _transformMLResponse(mlResponse) {
     console.log('🔄 Transforming ML response...');
     
-    // Format dari HuggingFace Space Anda:
-    // {
-    //   "status": "success",
-    //   "recommendation": {
-    //     "primary_offer": "General Offer",
-    //     "social_proof_offer": "General Offer",
-    //     "confidence_score": 0.37
-    //   },
-    //   "message": "...",
-    //   "user_summary": {...}
-    // }
-    
     try {
-      // Check if response has the expected structure
+      // Format dari HuggingFace Space:
+      // {
+      //   "status": "success",
+      //   "recommendation": {
+      //     "primary_offer": "General Offer",
+      //     "social_proof_offer": "General Offer",
+      //     "confidence_score": 0.37
+      //   },
+      //   "message": "...",
+      //   "user_summary": {...}
+      // }
+      
       if (mlResponse.status === 'success' && mlResponse.recommendation) {
         const rec = mlResponse.recommendation;
-        
-        // Extract offers - both primary and social proof
         const offers = [];
         
         // Primary offer
@@ -144,7 +148,7 @@ class MLService {
           offers.push({
             targetOffer: rec.primary_offer,
             score: rec.confidence_score || 0.5,
-            reason: `Primary recommendation: ${rec.primary_offer}. ${mlResponse.message || 'Based on your usage pattern'}`
+            reason: `Primary recommendation based on your usage pattern. ${mlResponse.message || ''}`
           });
         }
         
@@ -153,7 +157,7 @@ class MLService {
           offers.push({
             targetOffer: rec.social_proof_offer,
             score: (rec.confidence_score || 0.5) * 0.9, // Slightly lower score
-            reason: `Popular among users like you: ${rec.social_proof_offer}`
+            reason: `Popular among users with similar profile`
           });
         }
         
@@ -164,7 +168,7 @@ class MLService {
         }
       }
       
-      // If no valid recommendations found, log and return empty
+      // If no valid recommendations found
       console.warn('⚠️  Could not extract recommendations from response');
       return [];
       
@@ -191,6 +195,7 @@ class MLService {
       isHeavyDataUser: usageFeatures.isHeavyDataUser
     });
     
+    // Rule-based recommendations based on user profile
     // Rule 1: Heavy data users
     if (usageFeatures.isHeavyDataUser || usageFeatures.avgDataUsage > 10000) {
       mockRecommendations.push(
@@ -292,13 +297,12 @@ class MLService {
 
   /**
    * Health check ML service
-   * FIXED: Don't rely on /health endpoint since it doesn't exist
    */
   async healthCheck() {
     try {
       console.log('🏥 Checking ML service health...');
       
-      // Instead of calling /health, try the actual recommend endpoint with minimal data
+      // Test with minimal data
       const testData = {
         avg_data_usage_gb: 5.0,
         pct_video_usage: 0.3,
@@ -328,7 +332,8 @@ class MLService {
         status: 'healthy',
         service: 'HuggingFace Space',
         url: this.mlServiceUrl,
-        responseFormat: response.data.status || 'unknown'
+        responseFormat: response.data.status || 'unknown',
+        modelActive: true
       };
     } catch (error) {
       console.log('⚠️  ML Service health check failed:', error.message);
@@ -337,7 +342,8 @@ class MLService {
         service: 'HuggingFace Space',
         url: this.mlServiceUrl,
         error: error.message,
-        note: 'Using fallback mock recommendations'
+        note: 'Using fallback mock recommendations',
+        modelActive: false
       };
     }
   }
@@ -373,20 +379,23 @@ class MLService {
         console.log('📊 Test recommendations:', recommendations);
         return {
           success: true,
-          recommendations
+          recommendations,
+          modelActive: true
         };
       } else {
         console.warn('⚠️  Connection successful but no recommendations returned');
         return {
           success: false,
-          error: 'No recommendations returned from ML service'
+          error: 'No recommendations returned from ML service',
+          modelActive: false
         };
       }
     } catch (error) {
       console.error('❌ HuggingFace Space connection failed:', error.message);
       return {
         success: false,
-        error: error.message
+        error: error.message,
+        modelActive: false
       };
     }
   }
