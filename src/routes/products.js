@@ -1,3 +1,5 @@
+// src\routes\products.js
+
 const Joi = require('joi');
 const productHandler = require('../handlers/productHandler');
 const { checkRole } = require('../middleware/auth');

@@ -1,3 +1,5 @@
+// src\services\authService.js
+
 const Boom = require('@hapi/boom');
 const User = require('../models/User');
 const { generateToken } = require('../utils/jwt');

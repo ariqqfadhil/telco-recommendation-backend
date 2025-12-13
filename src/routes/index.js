@@ -1,3 +1,5 @@
+// src\routes\index.js
+
 // Health check route
 const healthRoute = {
   method: 'GET',

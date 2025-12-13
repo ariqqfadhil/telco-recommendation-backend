@@ -1,8 +1,10 @@
+// src\models\User.js
+
 const mongoose = require('mongoose');
 
 /**
- * User Model - Simple Authentication
- * No PIN, No OTP - Just phone number based login
+ * User Model - Simple Authentication + Customer Data
+ * Updated to include frontend required fields
  */
 const userSchema = new mongoose.Schema(
   {
@@ -35,6 +37,62 @@ const userSchema = new mongoose.Schema(
       default: 'user',
       index: true,
     },
+    
+    // ========== FRONTEND REQUIRED FIELDS ==========
+    
+    // Device information
+    deviceBrand: {
+      type: String,
+      enum: ['Samsung', 'Apple', 'Xiaomi', 'Oppo', 'Vivo', 'Realme', 'Huawei', 'Unknown'],
+      default: 'Unknown',
+    },
+    
+    // Plan type
+    planType: {
+      type: String,
+      enum: ['Prepaid', 'Postpaid'],
+      default: 'Prepaid',
+    },
+    
+    // Validity/Duration (in days)
+    validity: {
+      type: Number,
+      default: 30, // 30 days default
+    },
+    
+    // ========== USER QUOTAS & BALANCE ==========
+    
+    // Pulsa/Balance
+    balance: {
+      type: Number,
+      default: 0, // in Rupiah
+    },
+    
+    // Data internet quota (in MB)
+    dataQuota: {
+      type: Number,
+      default: 0,
+    },
+    
+    // Video streaming quota (in MB)
+    videoQuota: {
+      type: Number,
+      default: 0,
+    },
+    
+    // SMS quota
+    smsQuota: {
+      type: Number,
+      default: 0,
+    },
+    
+    // Voice call quota (in minutes)
+    voiceQuota: {
+      type: Number,
+      default: 0,
+    },
+    
+    // ========== ORIGINAL FIELDS ==========
     
     // User preferences untuk profiling rekomendasi
     preferences: {
@@ -82,8 +140,9 @@ const userSchema = new mongoose.Schema(
 );
 
 // Index for performance
-userSchema.index({ phoneNumber: 1 });
 userSchema.index({ role: 1, isActive: 1 });
+userSchema.index({ planType: 1 });
+userSchema.index({ deviceBrand: 1 });
 
 // Virtual to format phone number for display
 userSchema.virtual('formattedPhone').get(function() {
@@ -95,6 +154,28 @@ userSchema.virtual('formattedPhone').get(function() {
 // Method to check if user is new (no name set)
 userSchema.methods.isNewUser = function() {
   return !this.name || this.name === '';
+};
+
+// Method to format data for frontend display
+userSchema.methods.getFrontendData = function() {
+  return {
+    id: this._id,
+    phoneNumber: this.phoneNumber,
+    name: this.name,
+    // Frontend required fields
+    deviceBrand: this.deviceBrand,
+    planType: this.planType,
+    validity: this.validity,
+    // Quotas
+    balance: this.balance,
+    dataQuota: this.dataQuota,
+    videoQuota: this.videoQuota,
+    smsQuota: this.smsQuota,
+    voiceQuota: this.voiceQuota,
+    // Other
+    preferences: this.preferences,
+    lastLogin: this.lastLogin,
+  };
 };
 
 // Set toJSON to remove sensitive fields

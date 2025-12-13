@@ -1,3 +1,5 @@
+// src\handlers\authHandler.js
+
 const Boom = require('@hapi/boom');
 const authService = require('../services/authService');
 const { successResponse } = require('../utils/response');

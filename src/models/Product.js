@@ -1,8 +1,10 @@
+// src\models\Product.js
+
 const mongoose = require('mongoose');
 
 /**
  * Product Model - Aligned with ML Dataset
- * Simplified based on actual ML features needed
+ * Fixed: All streaming products now use videoDataQuota correctly
  */
 const productSchema = new mongoose.Schema(
   {
@@ -28,11 +30,13 @@ const productSchema = new mongoose.Schema(
       required: true,
     },
     
-    // Specifications - simplified
+    // Specifications - fixed videoDataQuota usage
     specifications: {
-      // Data packages
+      // Data packages - untuk paket data biasa
       dataQuota: Number, // in MB
-      videoDataQuota: Number, // in MB - for streaming packages
+      
+      // Video streaming packages - khusus untuk streaming
+      videoDataQuota: Number, // in MB - FIXED: untuk streaming harus pakai ini
       
       // Voice packages
       voiceMinutes: Number,

@@ -1,15 +1,25 @@
+// seed-data-complete.js
+
 require('dotenv').config();
 const mongoose = require('mongoose');
 const User = require('./src/models/User');
 const Product = require('./src/models/Product');
 
-// Sample Users (No PIN/OTP - Simple Login)
+// Sample Users with varied data
 const users = [
   {
     phoneNumber: '081234567890',
     name: 'Admin User',
     role: 'admin',
     isVerified: true,
+    deviceBrand: 'Apple',
+    planType: 'Postpaid',
+    validity: 30,
+    balance: 150000,
+    dataQuota: 25600, // 25GB
+    videoQuota: 15360, // 15GB
+    smsQuota: 500,
+    voiceQuota: 1000,
     preferences: {
       usageType: 'mixed',
       budget: 'high',
@@ -21,6 +31,14 @@ const users = [
     name: 'Regular User',
     role: 'user',
     isVerified: true,
+    deviceBrand: 'Samsung',
+    planType: 'Prepaid',
+    validity: 30,
+    balance: 75000,
+    dataQuota: 10240, // 10GB
+    videoQuota: 5120, // 5GB
+    smsQuota: 200,
+    voiceQuota: 300,
     preferences: {
       usageType: 'data',
       budget: 'medium',
@@ -32,6 +50,14 @@ const users = [
     name: 'Heavy Data User',
     role: 'user',
     isVerified: true,
+    deviceBrand: 'Xiaomi',
+    planType: 'Postpaid',
+    validity: 30,
+    balance: 200000,
+    dataQuota: 51200, // 50GB
+    videoQuota: 30720, // 30GB
+    smsQuota: 1000,
+    voiceQuota: 2000,
     preferences: {
       usageType: 'data',
       budget: 'high',
@@ -43,6 +69,14 @@ const users = [
     name: 'Voice User',
     role: 'user',
     isVerified: true,
+    deviceBrand: 'Oppo',
+    planType: 'Prepaid',
+    validity: 14,
+    balance: 30000,
+    dataQuota: 2048, // 2GB
+    videoQuota: 1024, // 1GB
+    smsQuota: 100,
+    voiceQuota: 500,
     preferences: {
       usageType: 'voice',
       budget: 'low',
@@ -54,15 +88,42 @@ const users = [
     name: 'Budget User',
     role: 'user',
     isVerified: true,
+    deviceBrand: 'Vivo',
+    planType: 'Prepaid',
+    validity: 7,
+    balance: 15000,
+    dataQuota: 3072, // 3GB
+    videoQuota: 512, // 512MB
+    smsQuota: 50,
+    voiceQuota: 100,
     preferences: {
       usageType: 'mixed',
       budget: 'low',
       interests: ['social-media', 'browsing'],
     },
   },
+  {
+    phoneNumber: '081234567895',
+    name: 'Streaming Enthusiast',
+    role: 'user',
+    isVerified: true,
+    deviceBrand: 'Realme',
+    planType: 'Postpaid',
+    validity: 30,
+    balance: 120000,
+    dataQuota: 20480, // 20GB
+    videoQuota: 40960, // 40GB unlimited streaming
+    smsQuota: 300,
+    voiceQuota: 600,
+    preferences: {
+      usageType: 'data',
+      budget: 'high',
+      interests: ['streaming'],
+    },
+  },
 ];
 
-// 40 Sample Products Aligned with ML Target Offers
+// 40 Sample Products - FIXED streaming products
 const products = [
   // ========== DATA BOOSTER (10 products) ==========
   {
@@ -262,13 +323,13 @@ const products = [
     targetOffer: 'Roaming Pass',
   },
 
-  // ========== STREAMING PARTNER PACK (7 products) ==========
+  // ========== STREAMING PARTNER PACK (7 products) - FIXED! ==========
   {
     name: 'Netflix Basic Package',
     category: 'streaming',
     description: 'Netflix Basic + 10GB streaming data',
     price: 80000,
-    specifications: { dataQuota: 10240, videoDataQuota: 10240, validity: 30 },
+    specifications: { videoDataQuota: 10240, validity: 30 }, // FIXED: videoDataQuota
     targetOffer: 'Streaming Partner Pack',
   },
   {
@@ -276,7 +337,7 @@ const products = [
     category: 'streaming',
     description: 'Netflix Premium + 15GB streaming data',
     price: 120000,
-    specifications: { dataQuota: 15360, videoDataQuota: 15360, validity: 30 },
+    specifications: { videoDataQuota: 15360, validity: 30 }, // FIXED: videoDataQuota
     targetOffer: 'Streaming Partner Pack',
   },
   {
@@ -284,7 +345,7 @@ const products = [
     category: 'streaming',
     description: 'Disney+ Hotstar + 10GB video quota',
     price: 90000,
-    specifications: { dataQuota: 10240, videoDataQuota: 10240, validity: 30 },
+    specifications: { videoDataQuota: 10240, validity: 30 }, // FIXED: videoDataQuota
     targetOffer: 'Streaming Partner Pack',
   },
   {
@@ -292,7 +353,7 @@ const products = [
     category: 'streaming',
     description: 'YouTube Premium + unlimited YouTube streaming',
     price: 85000,
-    specifications: { dataQuota: 999999, videoDataQuota: 999999, validity: 30 },
+    specifications: { videoDataQuota: 999999, validity: 30 }, // FIXED: videoDataQuota
     targetOffer: 'Streaming Partner Pack',
   },
   {
@@ -300,7 +361,7 @@ const products = [
     category: 'streaming',
     description: 'Spotify Premium + 5GB music streaming',
     price: 60000,
-    specifications: { dataQuota: 5120, validity: 30 },
+    specifications: { videoDataQuota: 5120, validity: 30 }, // FIXED: videoDataQuota (for music videos)
     targetOffer: 'Streaming Partner Pack',
   },
   {
@@ -308,7 +369,7 @@ const products = [
     category: 'streaming',
     description: 'Low latency gaming + 20GB for streaming',
     price: 150000,
-    specifications: { dataQuota: 20480, videoDataQuota: 20480, validity: 30 },
+    specifications: { videoDataQuota: 20480, validity: 30 }, // FIXED: videoDataQuota
     targetOffer: 'Streaming Partner Pack',
   },
   {
@@ -316,7 +377,7 @@ const products = [
     category: 'streaming',
     description: 'Unlimited streaming for all video apps',
     price: 200000,
-    specifications: { dataQuota: 999999, videoDataQuota: 999999, validity: 30 },
+    specifications: { videoDataQuota: 999999, validity: 30 }, // FIXED: videoDataQuota
     targetOffer: 'Streaming Partner Pack',
   },
 
@@ -482,7 +543,7 @@ const products = [
 
 async function seedData() {
   try {
-    console.log('🌱 Starting database seeding with Simple Login...');
+    console.log('🌱 Starting database seeding (Updated with Frontend Requirements)...');
     console.log('');
 
     // Connect to database
@@ -498,20 +559,36 @@ async function seedData() {
     console.log('');
 
     // Insert users
-    console.log('👤 Seeding users...');
+    console.log('👤 Seeding users with varied quotas...');
     const insertedUsers = await User.insertMany(users);
     console.log(`✅ Inserted ${insertedUsers.length} users`);
     console.log('');
-    console.log('📋 Test Accounts (Simple Login - No PIN/OTP):');
+    console.log('📋 Test Accounts:');
     insertedUsers.forEach(user => {
-      console.log(`   - ${user.phoneNumber} (${user.role}) - ${user.name}`);
+      console.log(`   - ${user.phoneNumber} (${user.role})`);
+      console.log(`     Name: ${user.name}`);
+      console.log(`     Device: ${user.deviceBrand} | Plan: ${user.planType}`);
+      console.log(`     Validity: ${user.validity} days`);
+      console.log(`     Balance: Rp ${user.balance.toLocaleString('id-ID')}`);
+      console.log(`     Data: ${(user.dataQuota / 1024).toFixed(1)}GB | Video: ${(user.videoQuota / 1024).toFixed(1)}GB`);
+      console.log(`     SMS: ${user.smsQuota} | Voice: ${user.voiceQuota} min`);
+      console.log('');
     });
-    console.log('');
 
     // Insert products
-    console.log('📦 Seeding products...');
+    console.log('📦 Seeding products (FIXED streaming products)...');
     const insertedProducts = await Product.insertMany(products);
     console.log(`✅ Inserted ${insertedProducts.length} products`);
+    console.log('');
+
+    // Verify streaming products
+    const streamingProducts = await Product.find({ category: 'streaming' });
+    console.log('🎬 Streaming Products Verification:');
+    streamingProducts.forEach(prod => {
+      const hasCorrectField = prod.specifications.videoDataQuota !== undefined;
+      const status = hasCorrectField ? '✅' : '❌';
+      console.log(`   ${status} ${prod.name}: videoDataQuota = ${prod.specifications.videoDataQuota || 'N/A'}`);
+    });
     console.log('');
 
     // Count by category
@@ -526,40 +603,15 @@ async function seedData() {
     });
     console.log('');
 
-    // Count by targetOffer
-    const targetCount = await Product.aggregate([
-      { $group: { _id: '$targetOffer', count: { $sum: 1 } } },
-      { $sort: { _id: 1 } }
-    ]);
-
-    console.log('🎯 Products by target offer:');
-    targetCount.forEach(item => {
-      console.log(`   - ${item._id}: ${item.count} products`);
-    });
-    console.log('');
-
     console.log('═══════════════════════════════════════════════════');
     console.log('🎉 Database seeding completed successfully!');
     console.log('═══════════════════════════════════════════════════');
     console.log('');
-    console.log('📊 Summary:');
-    console.log(`   - Users: ${insertedUsers.length}`);
-    console.log(`   - Products: ${insertedProducts.length}`);
-    console.log(`   - Categories: ${categoryCount.length}`);
-    console.log(`   - Target Offers: ${targetCount.length}`);
-    console.log('');
-    console.log('🔐 SIMPLE LOGIN FLOW:');
-    console.log('   1. POST /api/auth/login');
-    console.log('      { "phoneNumber": "081234567890" }');
-    console.log('   2. Receive JWT token');
-    console.log('   3. Use token for authenticated requests');
-    console.log('');
-    console.log('💡 Features:');
-    console.log('   ✅ No PIN required');
-    console.log('   ✅ No OTP required (no SMS cost)');
-    console.log('   ✅ Auto-register new users');
-    console.log('   ✅ JWT token valid for 7 days');
-    console.log('   ✅ Perfect for demo/testing');
+    console.log('✅ FRONTEND REQUIREMENTS IMPLEMENTED:');
+    console.log('   1. User fields: deviceBrand, planType, validity ✅');
+    console.log('   2. User quotas: balance, data, video, sms, voice ✅');
+    console.log('   3. Fixed streaming products: videoDataQuota ✅');
+    console.log('   4. Varied user data for testing ✅');
     console.log('═══════════════════════════════════════════════════');
 
     process.exit(0);

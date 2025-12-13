@@ -1,3 +1,5 @@
+// src\middleware\auth.js
+
 const Boom = require('@hapi/boom');
 const { verifyToken } = require('../utils/jwt');
 const User = require('../models/User');

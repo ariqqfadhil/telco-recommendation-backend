@@ -1,3 +1,5 @@
+// src\routes\auth.js
+
 const Joi = require('joi');
 const authHandler = require('../handlers/authHandler');
 const { checkRole } = require('../middleware/auth');

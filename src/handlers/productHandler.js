@@ -1,3 +1,5 @@
+// src\handlers\productHandler.js
+
 const Boom = require('@hapi/boom');
 const Product = require('../models/Product');
 const { successResponse, paginatedResponse } = require('../utils/response');

@@ -1,3 +1,5 @@
+// src\models\UsageProfile.js
+
 const mongoose = require('mongoose');
 
 const usageProfileSchema = new mongoose.Schema(

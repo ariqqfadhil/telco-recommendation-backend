@@ -1,3 +1,5 @@
+// src\server.js
+
 const Hapi = require('@hapi/hapi');
 const Jwt = require('@hapi/jwt');
 const Inert = require('@hapi/inert');
