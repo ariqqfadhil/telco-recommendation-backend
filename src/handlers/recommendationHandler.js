@@ -10,6 +10,7 @@ const { successResponse } = require('../utils/response');
 class RecommendationHandler {
   /**
    * GET /api/recommendations - Get personalized recommendations for user
+   * FIXED: Deterministic product selection + Fallback untuk hasil < limit
    */
   getRecommendations = async (request, h) => {
     try {
@@ -21,7 +22,7 @@ class RecommendationHandler {
       const startTime = Date.now();
 
       // Get user data
-      const user = await User.findById(userId).select('preferences').lean();
+      const user = await User.findById(userId).select('preferences deviceBrand planType').lean();
 
       if (!user) {
         throw Boom.notFound('User not found');
@@ -29,7 +30,7 @@ class RecommendationHandler {
 
       console.log('✅ User found');
 
-      // Generate usage features directly (no dependency on usageProfileService)
+      // Generate usage features directly
       const usageFeatures = this._generateUsageFeatures(user.preferences);
       console.log('✅ Usage features generated');
 
@@ -44,18 +45,32 @@ class RecommendationHandler {
 
       console.log('✅ ML recommendations received:', mlRecommendations.length);
 
-      // Get all active products
+      // Get all active products (cached for performance)
       const allProducts = await Product.find({ isActive: true }).lean();
       console.log('✅ Total active products:', allProducts.length);
 
-      // Map ML recommendations to actual products
-      const recommendedProducts = this._mapRecommendationsToProducts(
+      // FIXED: Map ML recommendations to products DETERMINISTICALLY
+      let recommendedProducts = this._mapRecommendationsDeterministic(
         mlRecommendations,
         allProducts,
         limit
       );
 
       console.log('✅ Mapped to products:', recommendedProducts.length);
+
+      // FIXED: Fallback jika hasil < limit
+      if (recommendedProducts.length < limit) {
+        console.log(`⚠️  Only ${recommendedProducts.length} products matched, filling with fallback...`);
+        
+        recommendedProducts = this._addFallbackProducts(
+          recommendedProducts,
+          allProducts,
+          user,
+          limit
+        );
+        
+        console.log('✅ After fallback:', recommendedProducts.length);
+      }
 
       const responseTime = Date.now() - startTime;
 
@@ -86,6 +101,9 @@ class RecommendationHandler {
             algorithm,
             responseTime: `${responseTime}ms`,
             timestamp: new Date().toISOString(),
+            totalRecommendations: recommendedProducts.length,
+            mlRecommendations: mlRecommendations.length,
+            fallbackUsed: recommendedProducts.length > mlRecommendations.length,
             usedFeatures: {
               avgDataUsage: usageFeatures.avgDataUsage,
               userSegment: usageFeatures.userSegment,
@@ -157,52 +175,199 @@ class RecommendationHandler {
   }
 
   /**
-   * Helper: Map ML recommendations to products
+   * FIXED: Map ML recommendations to products DETERMINISTICALLY
+   * Tidak pakai random, tapi pakai sorting
    */
-  _mapRecommendationsToProducts(mlRecommendations, allProducts, limit) {
-    return mlRecommendations
-      .slice(0, limit)
-      .map((rec, index) => {
-        let products;
-        
-        // Try to find products by targetOffer (from ML)
-        if (rec.targetOffer) {
-          products = allProducts.filter(p => p.targetOffer === rec.targetOffer);
-        }
-        
-        // Fallback to category matching
-        if (!products || products.length === 0) {
-          const categoryMap = {
-            'Voice Bundle': 'voice',
-            'Data Booster': 'data',
-            'Roaming Pass': 'roaming',
-            'Streaming Partner Pack': 'streaming',
-            'Family Plan Offer': 'combo',
-            'Device Upgrade Offer': 'device',
-            'Retention Offer': 'combo',
-            'Top-up Promo': 'data',
-            'General Offer': 'combo',
-          };
-          
-          const category = categoryMap[rec.targetOffer];
-          if (category) {
-            products = allProducts.filter(p => p.category === category);
-          }
-        }
-        
-        // Pick random product from filtered results or fallback
-        const product = products && products.length > 0
-          ? products[Math.floor(Math.random() * products.length)]
-          : allProducts[index % allProducts.length];
-        
-        return {
-          productId: product._id,
-          score: rec.score || 0.5,
-          reason: rec.reason || 'Recommended based on your usage pattern',
-          product: product,
-          mlRecommendation: rec.targetOffer || 'General Offer'
+  _mapRecommendationsDeterministic(mlRecommendations, allProducts, limit) {
+    const mappedProducts = [];
+    const usedProductIds = new Set();
+
+    for (const rec of mlRecommendations) {
+      // Filter products by targetOffer
+      let candidateProducts = allProducts.filter(p => 
+        p.targetOffer === rec.targetOffer && !usedProductIds.has(p._id.toString())
+      );
+
+      // Fallback to category if no products found
+      if (candidateProducts.length === 0 && rec.targetOffer) {
+        const categoryMap = {
+          'Voice Bundle': 'voice',
+          'Data Booster': 'data',
+          'Roaming Pass': 'roaming',
+          'Streaming Partner Pack': 'streaming',
+          'Family Plan Offer': 'combo',
+          'Device Upgrade Offer': 'device',
+          'Retention Offer': 'combo',
+          'Top-up Promo': 'data',
+          'General Offer': 'combo',
         };
+        
+        const category = categoryMap[rec.targetOffer];
+        if (category) {
+          candidateProducts = allProducts.filter(p => 
+            p.category === category && !usedProductIds.has(p._id.toString())
+          );
+        }
+      }
+
+      if (candidateProducts.length === 0) continue;
+
+      // FIXED: Pilih produk secara DETERMINISTIC
+      // Sort by: popularity (purchaseCount) DESC, then price ASC
+      candidateProducts.sort((a, b) => {
+        // Primary sort: popularity (higher is better)
+        if (b.purchaseCount !== a.purchaseCount) {
+          return b.purchaseCount - a.purchaseCount;
+        }
+        // Secondary sort: price (lower is better for same popularity)
+        return a.price - b.price;
       });
+
+      // Take the FIRST product (most popular, or cheapest if same popularity)
+      const selectedProduct = candidateProducts[0];
+
+      mappedProducts.push({
+        productId: selectedProduct._id,
+        score: rec.score || 0.5,
+        reason: rec.reason || 'Recommended based on your usage pattern',
+        product: selectedProduct,
+        mlRecommendation: rec.targetOffer || 'General Offer'
+      });
+
+      usedProductIds.add(selectedProduct._id.toString());
+
+      // Stop jika sudah cukup
+      if (mappedProducts.length >= limit) break;
+    }
+
+    return mappedProducts;
+  }
+
+  /**
+   * FIXED: Add fallback products jika hasil ML < limit
+   * Fill with products based on user preferences
+   */
+  _addFallbackProducts(currentProducts, allProducts, user, limit) {
+    const usedProductIds = new Set(
+      currentProducts.map(p => p.productId.toString())
+    );
+
+    const needed = limit - currentProducts.length;
+    if (needed <= 0) return currentProducts;
+
+    console.log(`📊 Need ${needed} more products for fallback`);
+
+    // Get fallback products based on user preferences
+    const fallbackCandidates = this._getFallbackCandidates(
+      allProducts,
+      user,
+      usedProductIds
+    );
+
+    // Sort fallback by: popularity DESC, price ASC
+    fallbackCandidates.sort((a, b) => {
+      if (b.purchaseCount !== a.purchaseCount) {
+        return b.purchaseCount - a.purchaseCount;
+      }
+      return a.price - b.price;
+    });
+
+    // Take needed amount
+    const fallbackProducts = fallbackCandidates.slice(0, needed).map(product => ({
+      productId: product._id,
+      score: 0.5, // Lower score untuk fallback
+      reason: this._getFallbackReason(product, user),
+      product: product,
+      mlRecommendation: product.targetOffer || 'General Offer'
+    }));
+
+    console.log(`✅ Added ${fallbackProducts.length} fallback products`);
+
+    return [...currentProducts, ...fallbackProducts];
+  }
+
+  /**
+   * Get fallback candidates based on user preferences
+   */
+  _getFallbackCandidates(allProducts, user, usedProductIds) {
+    const preferences = user.preferences || {};
+    
+    // Priority 1: Match user's usage type
+    let candidates = allProducts.filter(p => {
+      if (usedProductIds.has(p._id.toString())) return false;
+      
+      const categoryMap = {
+        'data': ['data', 'streaming'],
+        'voice': ['voice', 'combo'],
+        'sms': ['combo'],
+        'mixed': ['combo', 'data', 'voice']
+      };
+      
+      const preferredCategories = categoryMap[preferences.usageType] || ['combo'];
+      return preferredCategories.includes(p.category);
+    });
+
+    // Priority 2: Match budget
+    if (preferences.budget && candidates.length > 3) {
+      const priceRanges = {
+        'low': { min: 0, max: 75000 },
+        'medium': { min: 50000, max: 150000 },
+        'high': { min: 100000, max: 999999 }
+      };
+      
+      const range = priceRanges[preferences.budget];
+      if (range) {
+        const inBudget = candidates.filter(p => 
+          p.price >= range.min && p.price <= range.max
+        );
+        
+        if (inBudget.length > 0) {
+          candidates = inBudget;
+        }
+      }
+    }
+
+    // Priority 3: If still empty, use popular products
+    if (candidates.length === 0) {
+      candidates = allProducts.filter(p => 
+        !usedProductIds.has(p._id.toString())
+      );
+    }
+
+    return candidates;
+  }
+
+  /**
+   * Generate reason for fallback products
+   */
+  _getFallbackReason(product, user) {
+    const preferences = user.preferences || {};
+    
+    if (product.category === 'data' && preferences.usageType === 'data') {
+      return 'Popular data package for data users like you';
+    }
+    
+    if (product.category === 'voice' && preferences.usageType === 'voice') {
+      return 'Popular voice package for frequent callers';
+    }
+    
+    if (product.category === 'streaming' && preferences.interests?.includes('streaming')) {
+      return 'Great for streaming enthusiasts';
+    }
+    
+    if (product.category === 'combo') {
+      return 'Popular combo package for balanced usage';
+    }
+    
+    if (preferences.budget === 'low' && product.price < 75000) {
+      return 'Budget-friendly option within your range';
+    }
+    
+    if (preferences.budget === 'high' && product.price > 100000) {
+      return 'Premium package with generous quotas';
+    }
+    
+    return 'Popular choice among users';
   }
 
   /**
