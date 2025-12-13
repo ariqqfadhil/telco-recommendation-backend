@@ -123,7 +123,7 @@ class MLService {
 
   /**
    * Transform ML response to backend format
-   * Menghandle response dari HuggingFace Space
+   * FIXED: Scale confidence score untuk variasi 0.2-0.95
    */
   _transformMLResponse(mlResponse) {
     console.log('🔄 Transforming ML response...');
@@ -135,7 +135,7 @@ class MLService {
       //   "recommendation": {
       //     "primary_offer": "General Offer",
       //     "social_proof_offer": "General Offer",
-      //     "confidence_score": 0.37
+      //     "confidence_score": 0.37  // Raw score dari ML
       //   },
       //   "message": "...",
       //   "user_summary": {...}
@@ -145,22 +145,47 @@ class MLService {
         const rec = mlResponse.recommendation;
         const offers = [];
         
+        // FIXED: Scale confidence score untuk variasi lebih luas
+        // Raw ML score biasanya: 0.3-0.8
+        // Kita scale ke: 0.2-0.95
+        const scaleScore = (rawScore) => {
+          // Clamp raw score between 0-1
+          const clamped = Math.max(0, Math.min(1, rawScore || 0.5));
+          
+          // Scale from [0, 1] to [0.2, 0.95]
+          // Formula: newScore = min + (clamped * (max - min))
+          const minScore = 0.20;
+          const maxScore = 0.95;
+          const scaled = minScore + (clamped * (maxScore - minScore));
+          
+          return scaled;
+        };
+        
+        const primaryScore = scaleScore(rec.confidence_score);
+        
         // Primary offer
         if (rec.primary_offer) {
           offers.push({
             targetOffer: rec.primary_offer,
-            score: rec.confidence_score || 0.5,
+            score: primaryScore,
             reason: `Primary recommendation based on your usage pattern. ${mlResponse.message || ''}`
           });
+          
+          console.log(`📊 Primary offer score: ${rec.confidence_score.toFixed(3)} → ${primaryScore.toFixed(3)}`);
         }
         
         // Social proof offer (if different from primary)
         if (rec.social_proof_offer && rec.social_proof_offer !== rec.primary_offer) {
+          // Social proof score slightly lower
+          const socialScore = primaryScore * 0.85; // 15% reduction
+          
           offers.push({
             targetOffer: rec.social_proof_offer,
-            score: (rec.confidence_score || 0.5) * 0.9, // Slightly lower score
+            score: socialScore,
             reason: `Popular among users with similar profile`
           });
+          
+          console.log(`📊 Social proof score: ${socialScore.toFixed(3)}`);
         }
         
         // If we got at least one offer, return it

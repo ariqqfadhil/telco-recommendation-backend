@@ -18,6 +18,7 @@ class RecommendationHandler {
       const { algorithm = 'hybrid', limit = 5 } = request.query;
 
       console.log('🔍 Getting recommendations for user:', userId);
+      console.log(`📊 Requested limit: ${limit}`);
 
       const startTime = Date.now();
 
@@ -29,6 +30,7 @@ class RecommendationHandler {
       }
 
       console.log('✅ User found');
+      console.log('👤 User budget:', user.preferences?.budget || 'not set');
 
       // Generate usage features directly
       const usageFeatures = this._generateUsageFeatures(user.preferences);
@@ -44,6 +46,7 @@ class RecommendationHandler {
       });
 
       console.log('✅ ML recommendations received:', mlRecommendations.length);
+      console.log('📊 ML scores:', mlRecommendations.map(r => r.score.toFixed(3)));
 
       // Get all active products (cached for performance)
       const allProducts = await Product.find({ isActive: true }).lean();
@@ -58,10 +61,11 @@ class RecommendationHandler {
       );
 
       console.log('✅ Mapped to products:', recommendedProducts.length);
+      console.log('📊 Mapped scores:', recommendedProducts.map(r => r.score.toFixed(3)));
 
       // FIXED: Fallback jika hasil < limit
       if (recommendedProducts.length < limit) {
-        console.log(`⚠️  Only ${recommendedProducts.length} products matched, filling with fallback...`);
+        console.log(`⚠️  Only ${recommendedProducts.length} products matched, need ${limit - recommendedProducts.length} more...`);
         
         recommendedProducts = this._addFallbackProducts(
           recommendedProducts,
@@ -71,6 +75,7 @@ class RecommendationHandler {
         );
         
         console.log('✅ After fallback:', recommendedProducts.length);
+        console.log('📊 Final scores:', recommendedProducts.map(r => r.score.toFixed(3)));
       }
 
       const responseTime = Date.now() - startTime;
@@ -95,6 +100,20 @@ class RecommendationHandler {
         console.error('⚠️  Failed to save recommendation history:', saveError.message);
       }
 
+      // IMPORTANT: Final check dan log
+      const scoreDistribution = {
+        veryHigh: recommendedProducts.filter(r => r.score >= 0.8).length,
+        high: recommendedProducts.filter(r => r.score >= 0.6 && r.score < 0.8).length,
+        medium: recommendedProducts.filter(r => r.score >= 0.4 && r.score < 0.6).length,
+        low: recommendedProducts.filter(r => r.score < 0.4).length,
+      };
+      
+      console.log('📊 Score distribution:');
+      console.log(`   Very High (≥0.8): ${scoreDistribution.veryHigh}`);
+      console.log(`   High (0.6-0.8): ${scoreDistribution.high}`);
+      console.log(`   Medium (0.4-0.6): ${scoreDistribution.medium}`);
+      console.log(`   Low (<0.4): ${scoreDistribution.low}`);
+
       return h.response(
         successResponse('Recommendations retrieved successfully', {
           recommendations: recommendedProducts,
@@ -105,6 +124,8 @@ class RecommendationHandler {
             totalRecommendations: recommendedProducts.length,
             mlRecommendations: mlRecommendations.length,
             fallbackUsed: recommendedProducts.length > mlRecommendations.length,
+            fallbackCount: Math.max(0, recommendedProducts.length - mlRecommendations.length),
+            scoreDistribution,
             usedFeatures: {
               avgDataUsage: usageFeatures.avgDataUsage,
               userSegment: usageFeatures.userSegment,
@@ -179,6 +200,7 @@ class RecommendationHandler {
    * FIXED: Map ML recommendations to products DETERMINISTICALLY
    * Tidak pakai random, tapi pakai sorting
    * + Filter by user budget
+   * IMPORTANT: Don't override scores!
    */
   _mapRecommendationsDeterministic(mlRecommendations, allProducts, limit, user) {
     const mappedProducts = [];
@@ -239,10 +261,14 @@ class RecommendationHandler {
       // Take the FIRST product (cheapest, or most popular if same price)
       const selectedProduct = finalCandidates[0];
 
-      // FIXED: Allow ANY score (even < 0.5)
+      // CRITICAL FIX: PRESERVE ML SCORE - don't use default!
+      const mlScore = rec.score; // Use exact score from ML
+      
+      console.log(`   ML match: ${rec.targetOffer} → ${selectedProduct.name} (score: ${mlScore.toFixed(3)})`);
+
       mappedProducts.push({
         productId: selectedProduct._id,
-        score: rec.score || 0.3, // Default to 0.3 if no score
+        score: mlScore, // PRESERVE ML SCORE!
         reason: rec.reason || 'Recommended based on your usage pattern',
         product: selectedProduct,
         mlRecommendation: rec.targetOffer || 'General Offer'
