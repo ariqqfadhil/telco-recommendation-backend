@@ -1,522 +1,325 @@
-// src\handlers\recommendationHandler.js
+// src/services/mlService.js
 
-const Boom = require('@hapi/boom');
-const Recommendation = require('../models/Recommendation');
-const Product = require('../models/Product');
-const User = require('../models/User');
-const mlService = require('../services/mlService');
-const { successResponse } = require('../utils/response');
+const axios = require('axios');
+const config = require('../config/env');
 
-class RecommendationHandler {
+/**
+ * ML Service - Handles communication with ML model (Hugging Face Deployment)
+ * Model URL: https://huuddz-telco-hybrid-api.hf.space/recommend
+ * 
+ * API Response Format:
+ * {
+ *   "status": "success",
+ *   "recommendation": {
+ *     "primary_offer": "Retention Offer",
+ *     "social_proof_offer": "General Offer",
+ *     "confidence_score": 0.58
+ *   },
+ *   "message": "Berdasarkan kebutuhan Anda...",
+ *   "user_summary": {
+ *     "spend": 0,
+ *     "device": "string"
+ *   }
+ * }
+ */
+class MLService {
+  constructor() {
+    this.mlServiceUrl = config.mlService.url;
+    this.timeout = config.mlService.timeout;
+    this.isModelAvailable = true;
+  }
+
   /**
-   * GET /api/recommendations - Get personalized recommendations for user
-   * FIXED: Deterministic product selection + Fallback untuk hasil < limit
+   * Get recommendations from ML model
+   * @param {Object} params - { userId, preferences, usageFeatures, algorithm }
    */
-  getRecommendations = async (request, h) => {
+  async getRecommendations(params) {
     try {
-      const { userId } = request.auth.credentials;
-      const { algorithm = 'hybrid', limit = 5 } = request.query;
+      const { userId, preferences, usageFeatures, algorithm } = params;
 
-      console.log('🔍 Getting recommendations for user:', userId);
+      console.log('🤖 ML Service: Preparing request...');
+      console.log('📊 User ID:', userId);
+      console.log('📊 Algorithm:', algorithm);
+      console.log('🌐 ML Service URL:', this.mlServiceUrl);
 
-      const startTime = Date.now();
-
-      // Get user data
-      const user = await User.findById(userId).select('preferences deviceBrand planType').lean();
-
-      if (!user) {
-        throw Boom.notFound('User not found');
-      }
-
-      console.log('✅ User found');
-
-      // Generate usage features directly
-      const usageFeatures = this._generateUsageFeatures(user.preferences);
-      console.log('✅ Usage features generated');
-
-      // Call ML service to get recommendations
-      console.log('🤖 Calling ML service...');
-      const mlRecommendations = await mlService.getRecommendations({
-        userId,
-        preferences: user.preferences,
-        usageFeatures,
-        algorithm,
-      });
-
-      console.log('✅ ML recommendations received:', mlRecommendations.length);
-
-      // Get all active products (cached for performance)
-      const allProducts = await Product.find({ isActive: true }).lean();
-      console.log('✅ Total active products:', allProducts.length);
-
-      // FIXED: Map ML recommendations to products DETERMINISTICALLY
-      let recommendedProducts = this._mapRecommendationsDeterministic(
-        mlRecommendations,
-        allProducts,
-        limit
-      );
-
-      console.log('✅ Mapped to products:', recommendedProducts.length);
-
-      // FIXED: Fallback jika hasil < limit
-      if (recommendedProducts.length < limit) {
-        console.log(`⚠️  Only ${recommendedProducts.length} products matched, filling with fallback...`);
+      // Prepare request payload based on Hugging Face API schema
+      const requestPayload = {
+        // Data usage in GB (convert from MB)
+        avg_data_usage_gb: parseFloat((usageFeatures?.avgDataUsage || 5000) / 1024),
         
-        recommendedProducts = this._addFallbackProducts(
-          recommendedProducts,
-          allProducts,
-          user,
-          limit
-        );
+        // Video usage percentage (0-1 OR 0-100 based on API, check docs)
+        // From schema: [0, 100] range, so convert 0-1 to 0-100
+        pct_video_usage: parseFloat((usageFeatures?.pctVideoUsage || 0.3) * 100),
         
-        console.log('✅ After fallback:', recommendedProducts.length);
-      }
-
-      const responseTime = Date.now() - startTime;
-
-      // Save recommendation history
-      try {
-        const recommendation = new Recommendation({
-          userId,
-          recommendedProducts: recommendedProducts.map(r => ({
-            productId: r.productId,
-            score: r.score,
-            reason: r.reason,
-          })),
-          algorithm,
-          responseTime,
-          modelVersion: 'v1.0',
-        });
-
-        await recommendation.save();
-        console.log('✅ Recommendation saved to history');
-      } catch (saveError) {
-        console.error('⚠️  Failed to save recommendation history:', saveError.message);
-      }
-
-      return h.response(
-        successResponse('Recommendations retrieved successfully', {
-          recommendations: recommendedProducts,
-          metadata: {
-            algorithm,
-            responseTime: `${responseTime}ms`,
-            timestamp: new Date().toISOString(),
-            totalRecommendations: recommendedProducts.length,
-            mlRecommendations: mlRecommendations.length,
-            fallbackUsed: recommendedProducts.length > mlRecommendations.length,
-            usedFeatures: {
-              avgDataUsage: usageFeatures.avgDataUsage,
-              userSegment: usageFeatures.userSegment,
-              dataPoints: usageFeatures.dataPoints,
-            },
-          },
-        })
-      ).code(200);
-    } catch (error) {
-      console.error('❌ Get recommendations error:', error);
-      console.error('❌ Error stack:', error.stack);
-      
-      if (Boom.isBoom(error)) {
-        throw error;
-      }
-      throw Boom.badImplementation('Failed to generate recommendations');
-    }
-  }
-
-  /**
-   * Helper: Generate usage features based on preferences
-   */
-  _generateUsageFeatures(preferences = {}) {
-    const defaults = {
-      avgDataUsage: 5000, // 5GB default
-      avgCallDuration: 100,
-      avgSmsCount: 50,
-      avgSpending: 75000,
-      pctVideoUsage: 0.3,
-      topupFreq: 1,
-      complaintCount: 0,
-      isHeavyDataUser: false,
-      contentType: preferences.usageType || 'mixed',
-      roamingFrequency: 'never',
-      hasFamilyPlan: false,
-      travelScore: 0.1,
-      deviceBrand: 'Unknown',
-      deviceOS: 'Unknown',
-      userSegment: 'balanced_user',
-      clusterLabel: null,
-      planType: 'standard',
-      dataPoints: 0,
-      completeness: 0.5,
-    };
-
-    // Adjust based on preferences
-    if (preferences.usageType === 'data') {
-      defaults.avgDataUsage = 15000; // 15GB
-      defaults.isHeavyDataUser = true;
-      defaults.userSegment = 'heavy_data_user';
-    } else if (preferences.usageType === 'voice') {
-      defaults.avgCallDuration = 500;
-      defaults.userSegment = 'heavy_voice_user';
-    }
-
-    if (preferences.budget === 'high') {
-      defaults.avgSpending = 150000;
-      defaults.planType = 'premium';
-    } else if (preferences.budget === 'low') {
-      defaults.avgSpending = 50000;
-      defaults.planType = 'basic';
-    }
-
-    if (preferences.interests?.includes('streaming')) {
-      defaults.pctVideoUsage = 0.6;
-    }
-
-    return defaults;
-  }
-
-  /**
-   * FIXED: Map ML recommendations to products DETERMINISTICALLY
-   * Tidak pakai random, tapi pakai sorting
-   */
-  _mapRecommendationsDeterministic(mlRecommendations, allProducts, limit) {
-    const mappedProducts = [];
-    const usedProductIds = new Set();
-
-    for (const rec of mlRecommendations) {
-      // Filter products by targetOffer
-      let candidateProducts = allProducts.filter(p => 
-        p.targetOffer === rec.targetOffer && !usedProductIds.has(p._id.toString())
-      );
-
-      // Fallback to category if no products found
-      if (candidateProducts.length === 0 && rec.targetOffer) {
-        const categoryMap = {
-          'Voice Bundle': 'voice',
-          'Data Booster': 'data',
-          'Roaming Pass': 'roaming',
-          'Streaming Partner Pack': 'streaming',
-          'Family Plan Offer': 'combo',
-          'Device Upgrade Offer': 'device',
-          'Retention Offer': 'combo',
-          'Top-up Promo': 'data',
-          'General Offer': 'combo',
-        };
+        // Call duration in minutes
+        avg_call_duration: parseFloat(usageFeatures?.avgCallDuration || 100),
         
-        const category = categoryMap[rec.targetOffer];
-        if (category) {
-          candidateProducts = allProducts.filter(p => 
-            p.category === category && !usedProductIds.has(p._id.toString())
-          );
-        }
-      }
-
-      if (candidateProducts.length === 0) continue;
-
-      // FIXED: Pilih produk secara DETERMINISTIC
-      // Sort by: popularity (purchaseCount) DESC, then price ASC
-      candidateProducts.sort((a, b) => {
-        // Primary sort: popularity (higher is better)
-        if (b.purchaseCount !== a.purchaseCount) {
-          return b.purchaseCount - a.purchaseCount;
-        }
-        // Secondary sort: price (lower is better for same popularity)
-        return a.price - b.price;
-      });
-
-      // Take the FIRST product (most popular, or cheapest if same popularity)
-      const selectedProduct = candidateProducts[0];
-
-      mappedProducts.push({
-        productId: selectedProduct._id,
-        score: rec.score || 0.5,
-        reason: rec.reason || 'Recommended based on your usage pattern',
-        product: selectedProduct,
-        mlRecommendation: rec.targetOffer || 'General Offer'
-      });
-
-      usedProductIds.add(selectedProduct._id.toString());
-
-      // Stop jika sudah cukup
-      if (mappedProducts.length >= limit) break;
-    }
-
-    return mappedProducts;
-  }
-
-  /**
-   * FIXED: Add fallback products jika hasil ML < limit
-   * Fill with products based on user preferences
-   */
-  _addFallbackProducts(currentProducts, allProducts, user, limit) {
-    const usedProductIds = new Set(
-      currentProducts.map(p => p.productId.toString())
-    );
-
-    const needed = limit - currentProducts.length;
-    if (needed <= 0) return currentProducts;
-
-    console.log(`📊 Need ${needed} more products for fallback`);
-
-    // Get fallback products based on user preferences
-    const fallbackCandidates = this._getFallbackCandidates(
-      allProducts,
-      user,
-      usedProductIds
-    );
-
-    // Sort fallback by: popularity DESC, price ASC
-    fallbackCandidates.sort((a, b) => {
-      if (b.purchaseCount !== a.purchaseCount) {
-        return b.purchaseCount - a.purchaseCount;
-      }
-      return a.price - b.price;
-    });
-
-    // Take needed amount
-    const fallbackProducts = fallbackCandidates.slice(0, needed).map(product => ({
-      productId: product._id,
-      score: 0.5, // Lower score untuk fallback
-      reason: this._getFallbackReason(product, user),
-      product: product,
-      mlRecommendation: product.targetOffer || 'General Offer'
-    }));
-
-    console.log(`✅ Added ${fallbackProducts.length} fallback products`);
-
-    return [...currentProducts, ...fallbackProducts];
-  }
-
-  /**
-   * Get fallback candidates based on user preferences
-   */
-  _getFallbackCandidates(allProducts, user, usedProductIds) {
-    const preferences = user.preferences || {};
-    
-    // Priority 1: Match user's usage type
-    let candidates = allProducts.filter(p => {
-      if (usedProductIds.has(p._id.toString())) return false;
-      
-      const categoryMap = {
-        'data': ['data', 'streaming'],
-        'voice': ['voice', 'combo'],
-        'sms': ['combo'],
-        'mixed': ['combo', 'data', 'voice']
+        // SMS frequency (integer)
+        sms_freq: parseInt(usageFeatures?.avgSmsCount || 50),
+        
+        // Monthly spending
+        monthly_spend: parseFloat(usageFeatures?.avgSpending || 75000),
+        
+        // Top-up frequency (integer)
+        topup_freq: parseInt(usageFeatures?.topupFreq || 1),
+        
+        // Travel score (0-1 OR 0-100, check schema - looks like 0-1)
+        travel_score: parseFloat(usageFeatures?.travelScore || 0.1),
+        
+        // Complaint count (integer)
+        complaint_count: parseInt(usageFeatures?.complaintCount || 0),
+        
+        // Plan type (string: must be exact match with enum)
+        plan_type: this._normalizePlanType(usageFeatures?.planType),
+        
+        // Device brand (string)
+        device_brand: usageFeatures?.deviceBrand || 'Samsung',
       };
-      
-      const preferredCategories = categoryMap[preferences.usageType] || ['combo'];
-      return preferredCategories.includes(p.category);
-    });
 
-    // Priority 2: Match budget
-    if (preferences.budget && candidates.length > 3) {
-      const priceRanges = {
-        'low': { min: 0, max: 75000 },
-        'medium': { min: 50000, max: 150000 },
-        'high': { min: 100000, max: 999999 }
-      };
-      
-      const range = priceRanges[preferences.budget];
-      if (range) {
-        const inBudget = candidates.filter(p => 
-          p.price >= range.min && p.price <= range.max
-        );
-        
-        if (inBudget.length > 0) {
-          candidates = inBudget;
-        }
-      }
-    }
+      console.log('📤 Sending request to ML model...');
+      console.log('📋 Request payload:', JSON.stringify(requestPayload, null, 2));
 
-    // Priority 3: If still empty, use popular products
-    if (candidates.length === 0) {
-      candidates = allProducts.filter(p => 
-        !usedProductIds.has(p._id.toString())
-      );
-    }
-
-    return candidates;
-  }
-
-  /**
-   * Generate reason for fallback products
-   */
-  _getFallbackReason(product, user) {
-    const preferences = user.preferences || {};
-    
-    if (product.category === 'data' && preferences.usageType === 'data') {
-      return 'Popular data package for data users like you';
-    }
-    
-    if (product.category === 'voice' && preferences.usageType === 'voice') {
-      return 'Popular voice package for frequent callers';
-    }
-    
-    if (product.category === 'streaming' && preferences.interests?.includes('streaming')) {
-      return 'Great for streaming enthusiasts';
-    }
-    
-    if (product.category === 'combo') {
-      return 'Popular combo package for balanced usage';
-    }
-    
-    if (preferences.budget === 'low' && product.price < 75000) {
-      return 'Budget-friendly option within your range';
-    }
-    
-    if (preferences.budget === 'high' && product.price > 100000) {
-      return 'Premium package with generous quotas';
-    }
-    
-    return 'Popular choice among users';
-  }
-
-  /**
-   * GET /api/recommendations/history - Get user's recommendation history
-   */
-  getRecommendationHistory = async (request, h) => {
-    try {
-      const { userId } = request.auth.credentials;
-      const { page = 1, limit = 10 } = request.query;
-
-      const skip = (page - 1) * limit;
-
-      const [recommendations, total] = await Promise.all([
-        Recommendation.find({ userId })
-          .populate('recommendedProducts.productId')
-          .sort({ createdAt: -1 })
-          .limit(Number(limit))
-          .skip(skip)
-          .lean(),
-        Recommendation.countDocuments({ userId }),
-      ]);
-
-      return h.response(
-        successResponse('Recommendation history retrieved successfully', {
-          recommendations,
-          pagination: {
-            page: Number(page),
-            limit: Number(limit),
-            total,
-            totalPages: Math.ceil(total / limit),
-          },
-        })
-      ).code(200);
-    } catch (error) {
-      console.error('Get history error:', error);
-      throw Boom.badImplementation('Failed to retrieve recommendation history');
-    }
-  }
-
-  /**
-   * POST /api/recommendations/{id}/interaction - Track user interaction
-   */
-  trackInteraction = async (request, h) => {
-    try {
-      const { userId } = request.auth.credentials;
-      const { id: recommendationId } = request.params;
-      const { productId, action } = request.payload;
-
-      const recommendation = await Recommendation.findOne({
-        _id: recommendationId,
-        userId,
-      });
-
-      if (!recommendation) {
-        throw Boom.notFound('Recommendation not found');
-      }
-
-      // Add interaction
-      recommendation.interactions.push({
-        productId,
-        action,
-        timestamp: new Date(),
-      });
-
-      await recommendation.save();
-
-      // Update product purchase count if action is 'purchased'
-      if (action === 'purchased') {
-        await Product.findByIdAndUpdate(productId, {
-          $inc: { purchaseCount: 1 },
-        });
-      }
-
-      return h.response(
-        successResponse('Interaction tracked successfully')
-      ).code(200);
-    } catch (error) {
-      console.error('Track interaction error:', error);
-      if (Boom.isBoom(error)) {
-        throw error;
-      }
-      throw Boom.badImplementation('Failed to track interaction');
-    }
-  }
-
-  /**
-   * GET /api/recommendations/stats - Get recommendation statistics (Admin only)
-   */
-  getStats = async (request, h) => {
-    try {
-      const stats = await Recommendation.aggregate([
+      // Call ML model API
+      const response = await axios.post(
+        this.mlServiceUrl,
+        requestPayload,
         {
-          $group: {
-            _id: '$algorithm',
-            count: { $sum: 1 },
-            avgResponseTime: { $avg: '$responseTime' },
-            avgAccuracy: { $avg: '$accuracy' },
+          timeout: this.timeout,
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
           },
-        },
-      ]);
+        }
+      );
 
-      const totalRecommendations = await Recommendation.countDocuments();
-      const totalUsers = await Recommendation.distinct('userId');
+      console.log('✅ ML model responded successfully');
+      console.log('📊 Response status:', response.status);
+      console.log('📊 Response data:', JSON.stringify(response.data, null, 2));
+      
+      // Parse the actual response format from your API
+      const recommendations = this._parseMLResponse(response.data);
+      
+      console.log('📊 Parsed recommendations:', recommendations.length);
+      console.log('📊 Offers:', recommendations.map(r => `${r.targetOffer} (${r.score.toFixed(2)})`));
+      
+      this.isModelAvailable = true;
+      return recommendations;
 
-      return h.response(
-        successResponse('Statistics retrieved successfully', {
-          totalRecommendations,
-          totalUsers: totalUsers.length,
-          byAlgorithm: stats,
-        })
-      ).code(200);
     } catch (error) {
-      console.error('Get stats error:', error);
-      throw Boom.badImplementation('Failed to retrieve statistics');
+      console.error('❌ ML Service error:', error.message);
+      
+      if (error.response) {
+        console.error('❌ Response status:', error.response.status);
+        console.error('❌ Response data:', JSON.stringify(error.response.data, null, 2));
+        
+        // Log detail errors untuk debugging
+        if (error.response.data?.detail) {
+          console.error('❌ Validation errors:');
+          error.response.data.detail.forEach((err, index) => {
+            console.error(`   ${index + 1}. Field: ${err.loc?.join('.')} - ${err.msg}`);
+            console.error(`      Type: ${err.type}`);
+          });
+        }
+      } else if (error.request) {
+        console.error('❌ No response received from ML service');
+        console.error('❌ Request timeout or network error');
+      } else {
+        console.error('❌ Error setting up request:', error.message);
+      }
+      
+      // Fallback to mock data if ML service fails
+      console.log('⚠️  ML Service failed, using fallback mock data');
+      this.isModelAvailable = false;
+      
+      return this._generateMockRecommendations(
+        params.preferences,
+        params.usageFeatures
+      );
     }
   }
 
   /**
-   * POST /api/recommendations/feedback - Submit feedback on recommendation
+   * Parse ML response to extract recommendations
+   * Based on actual API response format from Hugging Face
+   * @private
    */
-  submitFeedback = async (request, h) => {
-    try {
-      const { userId } = request.auth.credentials;
-      const { recommendationId, rating, comment } = request.payload;
+  _parseMLResponse(responseData) {
+    const recommendations = [];
 
-      const recommendation = await Recommendation.findOne({
-        _id: recommendationId,
-        userId,
-      });
-
-      if (!recommendation) {
-        throw Boom.notFound('Recommendation not found');
-      }
-
-      // Store feedback
-      recommendation.accuracy = rating / 5; // Convert rating to 0-1 scale
-      await recommendation.save();
-
-      return h.response(
-        successResponse('Feedback submitted successfully')
-      ).code(200);
-    } catch (error) {
-      console.error('Submit feedback error:', error);
-      if (Boom.isBoom(error)) {
-        throw error;
-      }
-      throw Boom.badImplementation('Failed to submit feedback');
+    if (!responseData || !responseData.recommendation) {
+      console.warn('⚠️  No recommendation object in response');
+      return recommendations;
     }
+
+    const rec = responseData.recommendation;
+    const message = responseData.message || 'Recommended based on your usage pattern';
+    const confidenceScore = rec.confidence_score || 0.5;
+
+    // Add primary offer (main recommendation)
+    if (rec.primary_offer) {
+      recommendations.push({
+        targetOffer: rec.primary_offer,
+        score: confidenceScore,
+        reason: message,
+        metadata: {
+          type: 'primary',
+          user_summary: responseData.user_summary,
+        }
+      });
+    }
+
+    // Add social proof offer if it's different from primary
+    if (rec.social_proof_offer && rec.social_proof_offer !== rec.primary_offer) {
+      recommendations.push({
+        targetOffer: rec.social_proof_offer,
+        score: confidenceScore * 0.85, // Slightly lower confidence for social proof
+        reason: 'Popular among users with similar usage patterns (Social Proof)',
+        metadata: {
+          type: 'social_proof',
+          user_summary: responseData.user_summary,
+        }
+      });
+    }
+
+    // If both are the same, just return one with higher confidence
+    if (rec.social_proof_offer === rec.primary_offer && recommendations.length === 1) {
+      // Boost confidence since both algorithms agree
+      recommendations[0].score = Math.min(confidenceScore * 1.1, 1.0);
+      recommendations[0].reason = 'Highly recommended! Both content-based and collaborative filtering agree on this offer.';
+    }
+
+    return recommendations;
+  }
+
+  /**
+   * Normalize plan type to match ML API requirements
+   * @private
+   */
+  _normalizePlanType(planType) {
+    if (!planType) return 'Prepaid';
+    
+    const normalized = planType.toLowerCase();
+    
+    // Map various formats to 'Prepaid' or 'Postpaid'
+    if (normalized.includes('prepaid') || normalized === 'basic' || normalized === 'standard') {
+      return 'Prepaid';
+    } else if (normalized.includes('postpaid') || normalized === 'premium') {
+      return 'Postpaid';
+    }
+    
+    return 'Prepaid'; // Default
+  }
+
+  /**
+   * Generate mock recommendations for testing/fallback
+   * @private
+   */
+  _generateMockRecommendations(preferences = {}, usageFeatures = {}) {
+    const usageType = preferences.usageType || 'mixed';
+    const budget = preferences.budget || 'medium';
+    const interests = preferences.interests || [];
+
+    const recommendations = [];
+
+    // Logic berdasarkan usage type
+    if (usageType === 'data' || interests.includes('streaming')) {
+      recommendations.push(
+        { targetOffer: 'Data Booster', score: 0.9, reason: 'High data usage detected' },
+        { targetOffer: 'Streaming Partner Pack', score: 0.85, reason: 'Perfect for streaming' }
+      );
+    }
+
+    if (usageType === 'voice' || usageFeatures.avgCallDuration > 200) {
+      recommendations.push(
+        { targetOffer: 'Voice Bundle', score: 0.88, reason: 'Frequent calls detected' }
+      );
+    }
+
+    if (interests.includes('gaming')) {
+      recommendations.push(
+        { targetOffer: 'Streaming Partner Pack', score: 0.82, reason: 'Good for online gaming' }
+      );
+    }
+
+    // Budget-based recommendations
+    if (budget === 'low') {
+      recommendations.push(
+        { targetOffer: 'Top-up Promo', score: 0.75, reason: 'Budget-friendly option' },
+        { targetOffer: 'General Offer', score: 0.70, reason: 'Best value package' }
+      );
+    } else if (budget === 'high') {
+      recommendations.push(
+        { targetOffer: 'Family Plan Offer', score: 0.80, reason: 'Premium family package' },
+        { targetOffer: 'Device Upgrade Offer', score: 0.78, reason: 'Upgrade to premium device' }
+      );
+    }
+
+    // Default recommendations
+    if (recommendations.length < 3) {
+      recommendations.push(
+        { targetOffer: 'General Offer', score: 0.70, reason: 'Popular combo package' },
+        { targetOffer: 'Data Booster', score: 0.65, reason: 'Extra data boost' }
+      );
+    }
+
+    // Roaming for travelers
+    if (usageFeatures.travelScore > 0.3) {
+      recommendations.push(
+        { targetOffer: 'Roaming Pass', score: 0.77, reason: 'Great for travelers' }
+      );
+    }
+
+    // Sort by score (highest first) and limit to top 8
+    return recommendations
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 8);
+  }
+
+  /**
+   * Health check for ML service
+   */
+  async healthCheck() {
+    try {
+      // Try to ping the ML service root
+      const healthUrl = this.mlServiceUrl.replace('/recommend', '');
+      
+      const response = await axios.get(healthUrl, {
+        timeout: 5000,
+      });
+      
+      return {
+        status: 'healthy',
+        available: true,
+        url: this.mlServiceUrl,
+        response: response.data,
+      };
+    } catch (error) {
+      return {
+        status: 'unhealthy',
+        available: false,
+        url: this.mlServiceUrl,
+        error: error.message,
+      };
+    }
+  }
+
+  /**
+   * Get model info
+   */
+  getModelInfo() {
+    return {
+      url: this.mlServiceUrl,
+      timeout: this.timeout,
+      isAvailable: this.isModelAvailable,
+      provider: 'Hugging Face',
+      docs: 'https://huuddz-telco-hybrid-api.hf.space/docs',
+      responseFormat: {
+        primary_offer: 'Main recommendation from content-based filtering',
+        social_proof_offer: 'Recommendation from collaborative filtering',
+        confidence_score: 'Model confidence (0-1 scale)',
+      }
+    };
   }
 }
 
-module.exports = new RecommendationHandler();
+module.exports = new MLService();

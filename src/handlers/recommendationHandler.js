@@ -1,4 +1,4 @@
-// src\handlers\recommendationHandler.js
+// src/handlers/recommendationHandler.js
 
 const Boom = require('@hapi/boom');
 const Recommendation = require('../models/Recommendation');
@@ -237,7 +237,7 @@ class RecommendationHandler {
 
       if (candidateProducts.length === 0) continue;
 
-      // FIXED: Filter by user budget
+      // FIXED: Filter by user budget (with relaxed ranges)
       const budgetFiltered = this._filterByBudget(candidateProducts, userBudget);
       
       // If budget filter hasil kosong, fallback ke semua candidates (tapi warning)
@@ -285,14 +285,15 @@ class RecommendationHandler {
 
   /**
    * Filter products by user budget
+   * UPDATED: More flexible budget ranges with tolerance
    */
   _filterByBudget(products, budget) {
     if (!budget) return products; // No budget filter
 
     const priceRanges = {
-      'low': { min: 0, max: 75000 },      // Rp 0 - 75k
-      'medium': { min: 30000, max: 150000 }, // Rp 30k - 150k (overlap untuk flexibility)
-      'high': { min: 80000, max: 999999 }    // Rp 80k+ (overlap untuk flexibility)
+      'low': { min: 0, max: 100000 },        // Rp 0 - 100k (increased tolerance)
+      'medium': { min: 30000, max: 200000 }, // Rp 30k - 200k
+      'high': { min: 80000, max: 999999 }    // Rp 80k+
     };
 
     const range = priceRanges[budget];
@@ -303,6 +304,12 @@ class RecommendationHandler {
     );
 
     console.log(`💰 Budget filter (${budget}): ${products.length} → ${filtered.length} products`);
+    
+    // If budget filter results in 0 products, return all (with warning)
+    if (filtered.length === 0) {
+      console.log(`⚠️  Budget filter too strict, returning all candidates`);
+      return products;
+    }
     
     return filtered;
   }
@@ -374,8 +381,8 @@ class RecommendationHandler {
     // Priority 2: Match budget
     if (preferences.budget && candidates.length > 3) {
       const priceRanges = {
-        'low': { min: 0, max: 75000 },
-        'medium': { min: 50000, max: 150000 },
+        'low': { min: 0, max: 100000 },
+        'medium': { min: 50000, max: 200000 },
         'high': { min: 100000, max: 999999 }
       };
       
@@ -423,7 +430,7 @@ class RecommendationHandler {
       return 'Popular combo package for balanced usage';
     }
     
-    if (preferences.budget === 'low' && product.price < 75000) {
+    if (preferences.budget === 'low' && product.price < 100000) {
       return 'Budget-friendly option within your range';
     }
     
