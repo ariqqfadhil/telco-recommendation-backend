@@ -178,11 +178,12 @@ userSchema.methods.getFrontendData = function() {
   };
 };
 
-// Set toJSON to remove sensitive fields
+// Set toJSON to remove sensitive fields and clean up response
 userSchema.set('toJSON', {
   virtuals: true,
   transform: function(doc, ret) {
     delete ret.__v;
+    delete ret._id; // Remove _id, keep only 'id' virtual field
     return ret;
   }
 });
