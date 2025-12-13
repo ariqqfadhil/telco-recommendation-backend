@@ -16,7 +16,7 @@ const config = {
     expiresIn: process.env.JWT_EXPIRES_IN || '7d',
   },
   mlService: {
-    url: process.env.ML_SERVICE_URL || 'http://localhost:8001',
+    url: process.env.ML_SERVICE_URL || 'https://huuddz-telco-hybrid-api.hf.space/recommend',
     timeout: parseInt(process.env.ML_SERVICE_TIMEOUT) || 30000,
   },
   cors: {
