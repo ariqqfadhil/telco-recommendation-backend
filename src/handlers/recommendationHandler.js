@@ -53,7 +53,8 @@ class RecommendationHandler {
       let recommendedProducts = this._mapRecommendationsDeterministic(
         mlRecommendations,
         allProducts,
-        limit
+        limit,
+        user // Pass user for budget filtering
       );
 
       console.log('✅ Mapped to products:', recommendedProducts.length);
@@ -177,10 +178,12 @@ class RecommendationHandler {
   /**
    * FIXED: Map ML recommendations to products DETERMINISTICALLY
    * Tidak pakai random, tapi pakai sorting
+   * + Filter by user budget
    */
-  _mapRecommendationsDeterministic(mlRecommendations, allProducts, limit) {
+  _mapRecommendationsDeterministic(mlRecommendations, allProducts, limit, user) {
     const mappedProducts = [];
     const usedProductIds = new Set();
+    const userBudget = user?.preferences?.budget;
 
     for (const rec of mlRecommendations) {
       // Filter products by targetOffer
@@ -212,23 +215,34 @@ class RecommendationHandler {
 
       if (candidateProducts.length === 0) continue;
 
+      // FIXED: Filter by user budget
+      const budgetFiltered = this._filterByBudget(candidateProducts, userBudget);
+      
+      // If budget filter hasil kosong, fallback ke semua candidates (tapi warning)
+      const finalCandidates = budgetFiltered.length > 0 ? budgetFiltered : candidateProducts;
+      
+      if (budgetFiltered.length === 0 && candidateProducts.length > 0) {
+        console.log(`⚠️  No products in budget range for ${rec.targetOffer}, using all candidates`);
+      }
+
       // FIXED: Pilih produk secara DETERMINISTIC
-      // Sort by: popularity (purchaseCount) DESC, then price ASC
-      candidateProducts.sort((a, b) => {
-        // Primary sort: popularity (higher is better)
-        if (b.purchaseCount !== a.purchaseCount) {
-          return b.purchaseCount - a.purchaseCount;
+      // Sort by: price ASC (cheaper first for budget-conscious), then popularity DESC
+      finalCandidates.sort((a, b) => {
+        // Primary sort: price (lower is better - budget friendly)
+        if (a.price !== b.price) {
+          return a.price - b.price;
         }
-        // Secondary sort: price (lower is better for same popularity)
-        return a.price - b.price;
+        // Secondary sort: popularity (higher is better for same price)
+        return b.purchaseCount - a.purchaseCount;
       });
 
-      // Take the FIRST product (most popular, or cheapest if same popularity)
-      const selectedProduct = candidateProducts[0];
+      // Take the FIRST product (cheapest, or most popular if same price)
+      const selectedProduct = finalCandidates[0];
 
+      // FIXED: Allow ANY score (even < 0.5)
       mappedProducts.push({
         productId: selectedProduct._id,
-        score: rec.score || 0.5,
+        score: rec.score || 0.3, // Default to 0.3 if no score
         reason: rec.reason || 'Recommended based on your usage pattern',
         product: selectedProduct,
         mlRecommendation: rec.targetOffer || 'General Offer'
@@ -241,6 +255,30 @@ class RecommendationHandler {
     }
 
     return mappedProducts;
+  }
+
+  /**
+   * Filter products by user budget
+   */
+  _filterByBudget(products, budget) {
+    if (!budget) return products; // No budget filter
+
+    const priceRanges = {
+      'low': { min: 0, max: 75000 },      // Rp 0 - 75k
+      'medium': { min: 30000, max: 150000 }, // Rp 30k - 150k (overlap untuk flexibility)
+      'high': { min: 80000, max: 999999 }    // Rp 80k+ (overlap untuk flexibility)
+    };
+
+    const range = priceRanges[budget];
+    if (!range) return products;
+
+    const filtered = products.filter(p => 
+      p.price >= range.min && p.price <= range.max
+    );
+
+    console.log(`💰 Budget filter (${budget}): ${products.length} → ${filtered.length} products`);
+    
+    return filtered;
   }
 
   /**

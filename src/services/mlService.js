@@ -5,7 +5,7 @@ const config = require('../config/env');
 
 /**
  * ML Service untuk komunikasi dengan HuggingFace Space
- * PRODUCTION READY - Integrated with deployed model
+ * FIXED: Score range 0.2-0.95 & Budget-aware recommendations
  */
 class MLService {
   constructor() {
@@ -181,7 +181,8 @@ class MLService {
   }
 
   /**
-   * MOCK RECOMMENDATIONS - Fallback when ML service unavailable
+   * FIXED: MOCK RECOMMENDATIONS with varied scores (0.2-0.95)
+   * Budget-aware recommendations
    */
   _getMockRecommendations(userData) {
     console.log('🎭 Generating mock recommendations...');
@@ -189,13 +190,33 @@ class MLService {
     const mockRecommendations = [];
     const usageFeatures = userData.usageFeatures || {};
     const preferences = userData.preferences || {};
+    const budget = preferences.budget || 'medium';
     
     console.log('📊 Using preferences:', preferences);
+    console.log('📊 Using budget:', budget);
     console.log('📊 Using features:', {
       usageType: preferences.usageType,
       avgDataUsage: usageFeatures.avgDataUsage,
       isHeavyDataUser: usageFeatures.isHeavyDataUser
     });
+    
+    // FIXED: Score calculation based on match quality
+    const getScore = (matchLevel) => {
+      // matchLevel: 'perfect', 'good', 'fair', 'poor'
+      const scoreRanges = {
+        'perfect': [0.85, 0.95],  // Very high match
+        'good': [0.65, 0.84],     // Good match
+        'fair': [0.45, 0.64],     // Fair match
+        'poor': [0.20, 0.44]      // Poor match (but still shown)
+      };
+      
+      const range = scoreRanges[matchLevel] || [0.3, 0.5];
+      const min = range[0];
+      const max = range[1];
+      
+      // Generate random score in range
+      return min + (Math.random() * (max - min));
+    };
     
     // Rule-based recommendations based on user profile
     // Rule 1: Heavy data users
@@ -203,15 +224,24 @@ class MLService {
       mockRecommendations.push(
         {
           targetOffer: 'Data Booster',
-          score: 0.95,
+          score: getScore('perfect'),
           reason: 'Heavy data usage detected - data booster recommended',
         },
         {
           targetOffer: 'Streaming Partner Pack',
-          score: 0.88,
+          score: getScore('good'),
           reason: 'High data quota with streaming features',
         }
       );
+      
+      // Add budget-appropriate option
+      if (budget === 'low') {
+        mockRecommendations.push({
+          targetOffer: 'Top-up Promo',
+          score: getScore('good'),
+          reason: 'Budget-friendly data boost option',
+        });
+      }
     }
     
     // Rule 2: Voice users
@@ -219,12 +249,12 @@ class MLService {
       mockRecommendations.push(
         {
           targetOffer: 'Voice Bundle',
-          score: 0.93,
+          score: getScore('perfect'),
           reason: 'Optimized for voice calls based on your usage',
         },
         {
           targetOffer: 'Family Plan Offer',
-          score: 0.85,
+          score: getScore('good'),
           reason: 'Great for regular callers with family sharing',
         }
       );
@@ -235,12 +265,12 @@ class MLService {
       mockRecommendations.push(
         {
           targetOffer: 'Streaming Partner Pack',
-          score: 0.91,
+          score: getScore('perfect'),
           reason: 'Perfect for video streaming based on your habits',
         },
         {
           targetOffer: 'Data Booster',
-          score: 0.86,
+          score: getScore('good'),
           reason: 'High-speed data for streaming',
         }
       );
@@ -251,49 +281,84 @@ class MLService {
       mockRecommendations.push(
         {
           targetOffer: 'Data Booster',
-          score: 0.90,
+          score: getScore('perfect'),
           reason: 'Best data package for your preference',
         },
         {
           targetOffer: 'General Offer',
-          score: 0.84,
+          score: getScore('good'),
           reason: 'Popular among data users',
         }
       );
     }
     
-    // Default recommendations
-    else {
+    // FIXED: Budget-specific recommendations
+    if (budget === 'low') {
+      mockRecommendations.push(
+        {
+          targetOffer: 'Top-up Promo',
+          score: getScore('good'),
+          reason: 'Budget-friendly option perfect for your spending range',
+        },
+        {
+          targetOffer: 'General Offer',
+          score: getScore('fair'),
+          reason: 'Affordable combo package',
+        }
+      );
+    } else if (budget === 'high') {
+      mockRecommendations.push(
+        {
+          targetOffer: 'Device Upgrade Offer',
+          score: getScore('good'),
+          reason: 'Premium package with device upgrade',
+        },
+        {
+          targetOffer: 'Retention Offer',
+          score: getScore('fair'),
+          reason: 'Exclusive loyalty rewards',
+        }
+      );
+    }
+    
+    // Default recommendations (if nothing matched)
+    if (mockRecommendations.length === 0) {
       mockRecommendations.push(
         {
           targetOffer: 'General Offer',
-          score: 0.87,
+          score: getScore('good'),
           reason: 'Best overall package for balanced usage',
         },
         {
           targetOffer: 'Data Booster',
-          score: 0.82,
+          score: getScore('fair'),
           reason: 'Popular combo package',
         },
         {
           targetOffer: 'Voice Bundle',
-          score: 0.78,
+          score: getScore('fair'),
           reason: 'Great value for your spending pattern',
         },
         {
           targetOffer: 'Streaming Partner Pack',
-          score: 0.72,
+          score: getScore('poor'),
           reason: 'Budget-friendly option',
         },
         {
           targetOffer: 'Family Plan Offer',
-          score: 0.68,
+          score: getScore('poor'),
           reason: 'Good starter package',
         }
       );
     }
 
     console.log('✅ Generated', mockRecommendations.length, 'mock recommendations');
+    console.log('📊 Score range:', 
+      Math.min(...mockRecommendations.map(r => r.score)).toFixed(2),
+      '-',
+      Math.max(...mockRecommendations.map(r => r.score)).toFixed(2)
+    );
+    
     return mockRecommendations;
   }
 
