@@ -29,11 +29,13 @@
                     <a href="#auth-endpoints">Authentication</a>
                     <a href="#product-endpoints">Products</a>
                     <a href="#recommendation-endpoints">Recommendations</a>
+                    <a href="#usage-profile-endpoints">Usage Profile</a>
                 </div>
                 
                 <div class="nav-section">
                     <h3>Resources</h3>
                     <a href="#models">Data Models</a>
+                    <a href="#ml-integration">ML Integration</a>
                     <a href="#errors">Error Codes</a>
                     <a href="#examples">Code Examples</a>
                 </div>
@@ -45,34 +47,34 @@
             <!-- Header -->
             <header class="header">
                 <h1>Telco Product Recommendation API</h1>
-                <p class="subtitle">Complete API documentation for integrating telco product recommendations powered by Machine Learning</p>
+                <p class="subtitle">Complete API documentation for integrating telco product recommendations powered by Hybrid Machine Learning</p>
             </header>
 
             <!-- Introduction -->
             <section id="introduction" class="section">
                 <h2>Introduction</h2>
-                <p>The Telco Recommendation API provides intelligent product recommendations for telecommunications services using hybrid machine learning algorithms. This API enables personalized offers based on user behavior, preferences, and usage patterns.</p>
+                <p>The Telco Recommendation API provides intelligent product recommendations for telecommunications services using a hybrid machine learning model deployed on Hugging Face. This API enables personalized offers based on user behavior, preferences, and usage patterns with natural score distribution.</p>
                 
                 <div class="feature-grid">
                     <div class="feature-card">
                         <div class="feature-icon">🤖</div>
                         <h3>ML-Powered</h3>
-                        <p>Hybrid recommendation engine combining collaborative filtering and content-based approaches</p>
+                        <p>Hybrid recommendation engine combining collaborative filtering and content-based approaches with natural score distribution (0.35-0.95)</p>
                     </div>
                     <div class="feature-card">
                         <div class="feature-icon">⚡</div>
                         <h3>Fast & Scalable</h3>
-                        <p>Optimized queries with MongoDB indexing and caching strategies</p>
+                        <p>Optimized queries with MongoDB indexing and smart fallback mechanism when ML service is unavailable</p>
                     </div>
                     <div class="feature-card">
                         <div class="feature-icon">🔒</div>
                         <h3>Secure</h3>
-                        <p>JWT authentication with role-based access control</p>
+                        <p>JWT authentication valid for 7 days with role-based access control (user/admin)</p>
                     </div>
                     <div class="feature-card">
                         <div class="feature-icon">📊</div>
                         <h3>Analytics Ready</h3>
-                        <p>Track user interactions and recommendation performance</p>
+                        <p>Track user interactions, recommendation performance, and usage profiles for continuous improvement</p>
                     </div>
                 </div>
             </section>
@@ -91,7 +93,7 @@
                 </div>
 
                 <div class="info-box">
-                    <strong>📌 Note:</strong> Tokens are valid for 7 days. No need to refresh manually - just login again when expired.
+                    <strong>📌 Note:</strong> Tokens are valid for 7 days. No need to refresh manually - just login again when expired. Simple phone-based authentication without PIN or OTP.
                 </div>
             </section>
 
@@ -102,6 +104,12 @@
                     <pre><code>https://telco-recommendation-backend-production.up.railway.app</code></pre>
                 </div>
                 <p>All API endpoints are relative to this base URL.</p>
+                
+                <h3>ML Model Endpoint</h3>
+                <div class="code-block">
+                    <pre><code>https://huuddz-telco-hybrid-api.hf.space/recommend</code></pre>
+                </div>
+                <p>The ML model is deployed on Hugging Face Spaces and integrates automatically with the backend.</p>
             </section>
 
             <!-- Response Format -->
@@ -136,6 +144,25 @@
   "statusCode": 400
 }</code></pre>
                 </div>
+
+                <h3>Paginated Response</h3>
+                <div class="code-block">
+                    <div class="code-header">
+                        <span>JSON</span>
+                        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                    </div>
+                    <pre><code>{
+  "status": "success",
+  "message": "Data retrieved successfully",
+  "data": [...],
+  "pagination": {
+    "page": 1,
+    "limit": 10,
+    "total": 100,
+    "totalPages": 10
+  }
+}</code></pre>
+                </div>
             </section>
 
             <!-- Authentication Endpoints -->
@@ -148,7 +175,7 @@
                         <span class="method method-post">POST</span>
                         <span class="path">/api/auth/login</span>
                     </div>
-                    <p class="endpoint-description">Simple login with phone number. Auto-registers new users.</p>
+                    <p class="endpoint-description">Simple login with phone number. Auto-registers new users without PIN or OTP.</p>
                     
                     <h4>Request Body</h4>
                     <div class="code-block">
@@ -157,12 +184,12 @@
                             <button class="copy-btn" onclick="copyCode(this)">Copy</button>
                         </div>
                         <pre><code>{
-  "phoneNumber": "081234567893",
-  "name": "Test User" // Optional
+  "phoneNumber": "081234567890",
+  "name": "John Doe" // Optional, auto-generated if empty
 }</code></pre>
                     </div>
 
-                    <h4>Response</h4>
+                    <h4>Response (200 OK)</h4>
                     <div class="code-block">
                         <pre><code>{
   "status": "success",
@@ -170,17 +197,25 @@
   "data": {
     "user": {
       "id": "693e9e6d8a13fdbaa3326a20",
-      "phoneNumber": "081234567893",
-      "name": "Voice User",
+      "phoneNumber": "081234567890",
+      "name": "John Doe",
       "role": "user",
       "isNewUser": false,
+      "deviceBrand": "Samsung",
+      "planType": "Prepaid",
+      "validity": 30,
+      "balance": 75000,
+      "dataQuota": 10240,
+      "videoQuota": 5120,
+      "smsQuota": 200,
+      "voiceQuota": 300,
       "preferences": {
-        "usageType": "voice",
-        "budget": "low",
-        "interests": ["work"]
+        "usageType": "data",
+        "budget": "medium",
+        "interests": ["streaming", "social-media"]
       },
       "profilePicture": "",
-      "lastLogin": "2025-12-14T14:00:15.600Z"
+      "lastLogin": "2025-12-15T10:30:00.000Z"
     },
     "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
   }
@@ -195,7 +230,36 @@
                         <span class="path">/api/auth/profile</span>
                         <span class="badge badge-auth">🔒 Requires Auth</span>
                     </div>
-                    <p class="endpoint-description">Get current user profile.</p>
+                    <p class="endpoint-description">Get current user profile with all quotas and preferences.</p>
+                    
+                    <h4>Response (200 OK)</h4>
+                    <div class="code-block">
+                        <pre><code>{
+  "status": "success",
+  "message": "Profile retrieved successfully",
+  "data": {
+    "id": "693e9e6d8a13fdbaa3326a20",
+    "phoneNumber": "081234567890",
+    "name": "John Doe",
+    "role": "user",
+    "deviceBrand": "Samsung",
+    "planType": "Prepaid",
+    "validity": 30,
+    "balance": 75000,
+    "dataQuota": 10240,
+    "videoQuota": 5120,
+    "smsQuota": 200,
+    "voiceQuota": 300,
+    "preferences": {
+      "usageType": "data",
+      "budget": "medium",
+      "interests": ["streaming"]
+    },
+    "isActive": true,
+    "lastLogin": "2025-12-15T10:30:00.000Z"
+  }
+}</code></pre>
+                    </div>
                 </div>
 
                 <!-- Update Profile -->
@@ -205,7 +269,24 @@
                         <span class="path">/api/auth/profile</span>
                         <span class="badge badge-auth">🔒 Requires Auth</span>
                     </div>
-                    <p class="endpoint-description">Update user profile and preferences.</p>
+                    <p class="endpoint-description">Update user profile, preferences, or profile picture.</p>
+                    
+                    <h4>Request Body</h4>
+                    <div class="code-block">
+                        <div class="code-header">
+                            <span>JSON</span>
+                            <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                        </div>
+                        <pre><code>{
+  "name": "John Doe Updated",
+  "profilePicture": "https://example.com/avatar.jpg",
+  "preferences": {
+    "usageType": "data",
+    "budget": "high",
+    "interests": ["streaming", "gaming", "work"]
+  }
+}</code></pre>
+                    </div>
                 </div>
 
                 <!-- Check Phone -->
@@ -214,21 +295,48 @@
                         <span class="method method-post">POST</span>
                         <span class="path">/api/auth/check-phone</span>
                     </div>
-                    <p class="endpoint-description">Check if phone number is registered.</p>
+                    <p class="endpoint-description">Check if phone number is registered (no authentication required).</p>
+                    
+                    <h4>Request Body</h4>
+                    <div class="code-block">
+                        <pre><code>{
+  "phoneNumber": "081234567890"
+}</code></pre>
+                    </div>
+
+                    <h4>Response (200 OK)</h4>
+                    <div class="code-block">
+                        <pre><code>{
+  "status": "success",
+  "message": "Phone number registered as John Doe",
+  "data": {
+    "available": false,
+    "phoneNumber": "081234567890",
+    "exists": true,
+    "userName": "John Doe"
+  }
+}</code></pre>
+                    </div>
                 </div>
-            </section>
 
-            <!-- Product Endpoints -->
-            <section id="product-endpoints" class="section">
-                <h2>Product Endpoints</h2>
+                <!-- Logout -->
+                <div class="endpoint">
+                    <div class="endpoint-header">
+                        <span class="method method-post">POST</span>
+                        <span class="path">/api/auth/logout</span>
+                        <span class="badge badge-auth">🔒 Requires Auth</span>
+                    </div>
+                    <p class="endpoint-description">Logout user (client-side token removal). Server logs the logout activity.</p>
+                </div>
 
-                <!-- Get All Products -->
+                <!-- Admin: Get All Users -->
                 <div class="endpoint">
                     <div class="endpoint-header">
                         <span class="method method-get">GET</span>
-                        <span class="path">/api/products</span>
+                        <span class="path">/api/auth/users</span>
+                        <span class="badge badge-admin">🔐 Admin Only</span>
                     </div>
-                    <p class="endpoint-description">Get all products with pagination and filters.</p>
+                    <p class="endpoint-description">Get all users with pagination (admin only).</p>
                     
                     <h4>Query Parameters</h4>
                     <table class="params-table">
@@ -248,20 +356,128 @@
                             <tr>
                                 <td><code>limit</code></td>
                                 <td>integer</td>
-                                <td>Items per page (default: 10)</td>
+                                <td>Items per page (default: 20, max: 100)</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Admin: Delete User -->
+                <div class="endpoint">
+                    <div class="endpoint-header">
+                        <span class="method method-delete">DELETE</span>
+                        <span class="path">/api/auth/users/{id}</span>
+                        <span class="badge badge-admin">🔐 Admin Only</span>
+                    </div>
+                    <p class="endpoint-description">Soft delete user (sets isActive to false). Data preserved for analytics.</p>
+                </div>
+            </section>
+
+            <!-- Product Endpoints -->
+            <section id="product-endpoints" class="section">
+                <h2>Product Endpoints</h2>
+
+                <!-- Get All Products -->
+                <div class="endpoint">
+                    <div class="endpoint-header">
+                        <span class="method method-get">GET</span>
+                        <span class="path">/api/products</span>
+                    </div>
+                    <p class="endpoint-description">Get all products with pagination, filters, and search.</p>
+                    
+                    <h4>Query Parameters</h4>
+                    <table class="params-table">
+                        <thead>
+                            <tr>
+                                <th>Parameter</th>
+                                <th>Type</th>
+                                <th>Description</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><code>page</code></td>
+                                <td>integer</td>
+                                <td>Page number (default: 1)</td>
+                            </tr>
+                            <tr>
+                                <td><code>limit</code></td>
+                                <td>integer</td>
+                                <td>Items per page (default: 10, max: 100)</td>
                             </tr>
                             <tr>
                                 <td><code>category</code></td>
                                 <td>string</td>
-                                <td>Filter by category</td>
+                                <td>Filter by category: data, voice, sms, combo, roaming, streaming, device, retention</td>
+                            </tr>
+                            <tr>
+                                <td><code>minPrice</code></td>
+                                <td>number</td>
+                                <td>Minimum price filter</td>
+                            </tr>
+                            <tr>
+                                <td><code>maxPrice</code></td>
+                                <td>number</td>
+                                <td>Maximum price filter</td>
                             </tr>
                             <tr>
                                 <td><code>search</code></td>
                                 <td>string</td>
                                 <td>Search in name/description</td>
                             </tr>
+                            <tr>
+                                <td><code>sortBy</code></td>
+                                <td>string</td>
+                                <td>Sort field: createdAt, price, name, rating.average (default: createdAt)</td>
+                            </tr>
+                            <tr>
+                                <td><code>sortOrder</code></td>
+                                <td>string</td>
+                                <td>Sort order: asc, desc (default: desc)</td>
+                            </tr>
                         </tbody>
                     </table>
+
+                    <h4>Response (200 OK)</h4>
+                    <div class="code-block">
+                        <pre><code>{
+  "status": "success",
+  "message": "Products retrieved successfully",
+  "data": [
+    {
+      "id": "693e9e6d8a13fdbaa3326a21",
+      "name": "Data Booster 10GB",
+      "category": "data",
+      "description": "Boost your data quota with extra 10GB high-speed internet",
+      "price": 50000,
+      "specifications": {
+        "dataQuota": 10240,
+        "validity": 30
+      },
+      "targetOffer": "Data Booster",
+      "imageUrl": "https://example.com/data-booster.jpg",
+      "isActive": true,
+      "purchaseCount": 1250,
+      "createdAt": "2025-12-01T00:00:00.000Z"
+    }
+  ],
+  "pagination": {
+    "page": 1,
+    "limit": 10,
+    "total": 40,
+    "totalPages": 4
+  }
+}</code></pre>
+                    </div>
+                </div>
+
+                <!-- Get Product by ID -->
+                <div class="endpoint">
+                    <div class="endpoint-header">
+                        <span class="method method-get">GET</span>
+                        <span class="path">/api/products/{id}</span>
+                    </div>
+                    <p class="endpoint-description">Get single product by ID with full details.</p>
                 </div>
 
                 <!-- Get Categories -->
@@ -271,6 +487,24 @@
                         <span class="path">/api/products/categories/list</span>
                     </div>
                     <p class="endpoint-description">Get all available product categories.</p>
+                    
+                    <h4>Response (200 OK)</h4>
+                    <div class="code-block">
+                        <pre><code>{
+  "status": "success",
+  "message": "Categories retrieved successfully",
+  "data": [
+    "data",
+    "voice",
+    "sms",
+    "combo",
+    "roaming",
+    "streaming",
+    "device",
+    "retention"
+  ]
+}</code></pre>
+                    </div>
                 </div>
 
                 <!-- Get Popular Products -->
@@ -279,7 +513,71 @@
                         <span class="method method-get">GET</span>
                         <span class="path">/api/products/popular/list</span>
                     </div>
-                    <p class="endpoint-description">Get popular products sorted by purchase count.</p>
+                    <p class="endpoint-description">Get popular products sorted by purchase count and rating.</p>
+                    
+                    <h4>Query Parameters</h4>
+                    <table class="params-table">
+                        <thead>
+                            <tr>
+                                <th>Parameter</th>
+                                <th>Type</th>
+                                <th>Description</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><code>limit</code></td>
+                                <td>integer</td>
+                                <td>Number of products (default: 10, max: 50)</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Create Product (Admin) -->
+                <div class="endpoint">
+                    <div class="endpoint-header">
+                        <span class="method method-post">POST</span>
+                        <span class="path">/api/products</span>
+                        <span class="badge badge-admin">🔐 Admin Only</span>
+                    </div>
+                    <p class="endpoint-description">Create new product (admin only).</p>
+                    
+                    <h4>Request Body</h4>
+                    <div class="code-block">
+                        <pre><code>{
+  "name": "Data Booster 15GB",
+  "category": "data",
+  "description": "Extra 15GB data for regular users",
+  "price": 70000,
+  "specifications": {
+    "dataQuota": 15360,
+    "validity": 30
+  },
+  "targetOffer": "Data Booster",
+  "imageUrl": "https://example.com/image.jpg"
+}</code></pre>
+                    </div>
+                </div>
+
+                <!-- Update Product (Admin) -->
+                <div class="endpoint">
+                    <div class="endpoint-header">
+                        <span class="method method-put">PUT</span>
+                        <span class="path">/api/products/{id}</span>
+                        <span class="badge badge-admin">🔐 Admin Only</span>
+                    </div>
+                    <p class="endpoint-description">Update existing product (admin only).</p>
+                </div>
+
+                <!-- Delete Product (Admin) -->
+                <div class="endpoint">
+                    <div class="endpoint-header">
+                        <span class="method method-delete">DELETE</span>
+                        <span class="path">/api/products/{id}</span>
+                        <span class="badge badge-admin">🔐 Admin Only</span>
+                    </div>
+                    <p class="endpoint-description">Soft delete product - sets isActive to false (admin only).</p>
                 </div>
             </section>
 
@@ -294,7 +592,7 @@
                         <span class="path">/api/recommendations</span>
                         <span class="badge badge-auth">🔒 Requires Auth</span>
                     </div>
-                    <p class="endpoint-description">Get personalized product recommendations powered by ML.</p>
+                    <p class="endpoint-description">Get personalized product recommendations powered by Hybrid ML model with natural score distribution.</p>
                     
                     <h4>Query Parameters</h4>
                     <table class="params-table">
@@ -309,7 +607,7 @@
                             <tr>
                                 <td><code>algorithm</code></td>
                                 <td>string</td>
-                                <td>collaborative, content-based, hybrid (default: hybrid)</td>
+                                <td>Algorithm type: collaborative, content-based, hybrid (default: hybrid)</td>
                             </tr>
                             <tr>
                                 <td><code>limit</code></td>
@@ -318,6 +616,89 @@
                             </tr>
                         </tbody>
                     </table>
+
+                    <h4>Response (200 OK)</h4>
+                    <div class="code-block">
+                        <pre><code>{
+  "status": "success",
+  "message": "Recommendations retrieved successfully",
+  "data": {
+    "recommendations": [
+      {
+        "productId": "693e9e6d8a13fdbaa3326a21",
+        "score": 0.82,
+        "reason": "Based on your high data usage pattern (Top recommendation)",
+        "product": {
+          "id": "693e9e6d8a13fdbaa3326a21",
+          "name": "Data Booster 25GB",
+          "category": "data",
+          "description": "Extra 25GB data for heavy users",
+          "price": 100000,
+          "specifications": {
+            "dataQuota": 25600,
+            "validity": 30
+          },
+          "targetOffer": "Data Booster",
+          "imageUrl": "https://example.com/image.jpg"
+        },
+        "mlRecommendation": "Data Booster",
+        "metadata": {
+          "type": "primary",
+          "rank": 1,
+          "originalConfidence": 0.82,
+          "decayFactor": 1.0,
+          "isNaturalDistribution": true,
+          "mlMetadata": {
+            "avgDataUsage": 15000,
+            "userSegment": "heavy_data_user"
+          },
+          "selectionMethod": "budget_aware"
+        }
+      },
+      {
+        "productId": "693e9e6d8a13fdbaa3326a22",
+        "score": 0.79,
+        "reason": "Alternative recommendation (Rank 2)",
+        "product": {
+          "name": "Streaming Partner Pack",
+          "price": 120000
+        },
+        "mlRecommendation": "Streaming Partner Pack",
+        "metadata": {
+          "type": "alternative",
+          "rank": 2
+        }
+      }
+    ],
+    "metadata": {
+      "algorithm": "hybrid",
+      "responseTime": "1250ms",
+      "timestamp": "2025-12-15T10:35:00.000Z",
+      "totalRecommendations": 5,
+      "mlRecommendations": 5,
+      "fallbackUsed": false,
+      "fallbackCount": 0,
+      "scoreDistribution": {
+        "veryHigh": 2,
+        "high": 2,
+        "medium": 1,
+        "low": 0
+      },
+      "distribution": "natural",
+      "usedFeatures": {
+        "avgDataUsage": 15000,
+        "userSegment": "heavy_data_user",
+        "budget": "Prepaid",
+        "deviceBrand": "Samsung"
+      }
+    }
+  }
+}</code></pre>
+                    </div>
+
+                    <div class="info-box">
+                        <strong>📊 Score Distribution:</strong> Natural distribution from ML model (0.35-0.95). Top recommendations get higher scores with 3% decay per rank. Smart fallback mechanism activates if ML service is unavailable.
+                    </div>
                 </div>
 
                 <!-- Get Recommendation History -->
@@ -328,6 +709,29 @@
                         <span class="badge badge-auth">🔒 Requires Auth</span>
                     </div>
                     <p class="endpoint-description">Get user's recommendation history with pagination.</p>
+                    
+                    <h4>Query Parameters</h4>
+                    <table class="params-table">
+                        <thead>
+                            <tr>
+                                <th>Parameter</th>
+                                <th>Type</th>
+                                <th>Description</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><code>page</code></td>
+                                <td>integer</td>
+                                <td>Page number (default: 1)</td>
+                            </tr>
+                            <tr>
+                                <td><code>limit</code></td>
+                                <td>integer</td>
+                                <td>Items per page (default: 10, max: 50)</td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
 
                 <!-- Track Interaction -->
@@ -337,8 +741,365 @@
                         <span class="path">/api/recommendations/{id}/interaction</span>
                         <span class="badge badge-auth">🔒 Requires Auth</span>
                     </div>
-                    <p class="endpoint-description">Track user interaction with recommended product.</p>
+                    <p class="endpoint-description">Track user interaction with recommended product for ML feedback loop.</p>
+                    
+                    <h4>Request Body</h4>
+                    <div class="code-block">
+                        <pre><code>{
+  "productId": "693e9e6d8a13fdbaa3326a21",
+  "action": "purchased"
+}</code></pre>
+                    </div>
+
+                    <h4>Action Types</h4>
+                    <table class="params-table">
+                        <thead>
+                            <tr>
+                                <th>Action</th>
+                                <th>Description</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><code>viewed</code></td>
+                                <td>User viewed the product details</td>
+                            </tr>
+                            <tr>
+                                <td><code>clicked</code></td>
+                                <td>User clicked on the product</td>
+                            </tr>
+                            <tr>
+                                <td><code>purchased</code></td>
+                                <td>User purchased the product (increments purchaseCount)</td>
+                            </tr>
+                            <tr>
+                                <td><code>ignored</code></td>
+                                <td>User ignored the recommendation</td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
+
+                <!-- Get Stats (Admin) -->
+                <div class="endpoint">
+                    <div class="endpoint-header">
+                        <span class="method method-get">GET</span>
+                        <span class="path">/api/recommendations/stats</span>
+                        <span class="badge badge-admin">🔐 Admin Only</span>
+                    </div>
+                    <p class="endpoint-description">Get recommendation statistics by algorithm (admin only).</p>
+                </div>
+
+                <!-- Submit Feedback -->
+                <div class="endpoint">
+                    <div class="endpoint-header">
+                        <span class="method method-post">POST</span>
+                        <span class="path">/api/recommendations/feedback</span>
+                        <span class="badge badge-auth">🔒 Requires Auth</span>
+                    </div>
+                    <p class="endpoint-description">Submit feedback on recommendation quality (1-5 stars).</p>
+                    
+                    <h4>Request Body</h4>
+                    <div class="code-block">
+                        <pre><code>{
+  "recommendationId": "693e9e6d8a13fdbaa3326a30",
+  "rating": 5,
+  "comment": "Very accurate recommendations!"
+}</code></pre>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Usage Profile Endpoints -->
+            <section id="usage-profile-endpoints" class="section">
+                <h2>Usage Profile Endpoints</h2>
+                <p>Usage profiles store user behavior data for ML feature extraction. These endpoints are typically used by admin systems for data management.</p>
+
+                <!-- Get or Create Profile -->
+                <div class="endpoint">
+                    <div class="endpoint-header">
+                        <span class="method method-get">GET</span>
+                        <span class="path">/api/usage-profile/{userId}</span>
+                        <span class="badge badge-admin">🔐 Admin Only</span>
+                    </div>
+                    <p class="endpoint-description">Get usage profile for user. Auto-creates if not exists.</p>
+                </div>
+
+                <!-- Update Profile -->
+                <div class="endpoint">
+                    <div class="endpoint-header">
+                        <span class="method method-put">PUT</span>
+                        <span class="path">/api/usage-profile/{userId}</span>
+                        <span class="badge badge-admin">🔐 Admin Only</span>
+                    </div>
+                    <p class="endpoint-description">Update usage profile with new stats or patterns.</p>
+                    
+                    <h4>Request Body Example</h4>
+                    <div class="code-block">
+                        <pre><code>{
+  "stats": {
+    "avgDataUsage": {
+      "monthly": 15000
+    },
+    "avgCallDuration": {
+      "monthly": 200
+    },
+    "avgMonthlySpending": 120000,
+    "pctVideoUsage": 0.6
+  },
+  "patterns": {
+    "isHeavyDataUser": true,
+    "preferredContentType": "video"
+  }
+}</code></pre>
+                    </div>
+                </div>
+
+                <!-- Add Usage Record -->
+                <div class="endpoint">
+                    <div class="endpoint-header">
+                        <span class="method method-post">POST</span>
+                        <span class="path">/api/usage-profile/{userId}/record</span>
+                        <span class="badge badge-admin">🔐 Admin Only</span>
+                    </div>
+                    <p class="endpoint-description">Add usage record to profile history (auto-calculates averages).</p>
+                </div>
+
+                <!-- Get ML Features -->
+                <div class="endpoint">
+                    <div class="endpoint-header">
+                        <span class="method method-get">GET</span>
+                        <span class="path">/api/usage-profile/{userId}/ml-features</span>
+                        <span class="badge badge-admin">🔐 Admin Only</span>
+                    </div>
+                    <p class="endpoint-description">Get ML features extracted from usage profile for recommendation engine.</p>
+                </div>
+            </section>
+
+            <!-- Data Models -->
+            <section id="models" class="section">
+                <h2>Data Models</h2>
+
+                <h3>User Model</h3>
+                <div class="code-block">
+                    <pre><code>{
+  "id": "string (ObjectId)",
+  "phoneNumber": "string (unique, Indonesian format)",
+  "name": "string",
+  "role": "user | admin",
+  
+  // Frontend required fields
+  "deviceBrand": "Samsung | Apple | Xiaomi | Oppo | Vivo | Realme | Huawei | Unknown",
+  "planType": "Prepaid | Postpaid",
+  "validity": "number (days)",
+  
+  // Quotas
+  "balance": "number (Rupiah)",
+  "dataQuota": "number (MB)",
+  "videoQuota": "number (MB)",
+  "smsQuota": "number",
+  "voiceQuota": "number (minutes)",
+  
+  // Preferences
+  "preferences": {
+    "usageType": "data | voice | sms | mixed",
+    "budget": "low | medium | high",
+    "interests": ["streaming", "gaming", "social-media", "work", "browsing"]
+  },
+  
+  "isActive": "boolean",
+  "isVerified": "boolean",
+  "profilePicture": "string (URL)",
+  "lastLogin": "date",
+  "createdAt": "date",
+  "updatedAt": "date"
+}</code></pre>
+                </div>
+
+                <h3>Product Model</h3>
+                <div class="code-block">
+                    <pre><code>{
+  "id": "string (ObjectId)",
+  "name": "string",
+  "category": "data | voice | sms | combo | roaming | streaming | device | retention",
+  "description": "string",
+  "price": "number",
+  
+  "specifications": {
+    "dataQuota": "number (MB) - for data packages",
+    "videoDataQuota": "number (MB) - for streaming packages",
+    "voiceMinutes": "number",
+    "smsCount": "number",
+    "validity": "number (days)",
+    "roaming": {
+      "isAvailable": "boolean",
+      "countries": ["string"],
+      "dataQuota": "number (MB)",
+      "voiceMinutes": "number"
+    }
+  },
+  
+  "targetOffer": "Data Booster | Voice Bundle | Streaming Partner Pack | etc.",
+  "imageUrl": "string (URL)",
+  "isActive": "boolean",
+  "purchaseCount": "number",
+  "createdAt": "date",
+  "updatedAt": "date"
+}</code></pre>
+                </div>
+
+                <h3>Recommendation Model</h3>
+                <div class="code-block">
+                    <pre><code>{
+  "id": "string (ObjectId)",
+  "userId": "string (ObjectId)",
+  "recommendedProducts": [
+    {
+      "productId": "string (ObjectId)",
+      "score": "number (0-1)",
+      "reason": "string"
+    }
+  ],
+  "modelVersion": "string (e.g., v1.0-optimized)",
+  "algorithm": "collaborative | content-based | hybrid",
+  "interactions": [
+    {
+      "productId": "string (ObjectId)",
+      "action": "viewed | clicked | purchased | ignored",
+      "timestamp": "date"
+    }
+  ],
+  "accuracy": "number (0-1)",
+  "responseTime": "number (milliseconds)",
+  "createdAt": "date",
+  "updatedAt": "date"
+}</code></pre>
+                </div>
+
+                <h3>Usage Profile Model</h3>
+                <div class="code-block">
+                    <pre><code>{
+  "userId": "string (ObjectId, unique)",
+  
+  "deviceInfo": {
+    "model": "string",
+    "brand": "string",
+    "os": "string",
+    "osVersion": "string"
+  },
+  
+  "stats": {
+    "avgDataUsage": {
+      "daily": "number (MB)",
+      "weekly": "number (MB)",
+      "monthly": "number (MB)"
+    },
+    "avgCallDuration": {
+      "monthly": "number (minutes)"
+    },
+    "avgSms": {
+      "monthly": "number"
+    },
+    "avgMonthlySpending": "number (Rupiah)",
+    "pctVideoUsage": "number (0-1)",
+    "topupFreq": "number (per month)",
+    "complaintCount": "number"
+  },
+  
+  "patterns": {
+    "isHeavyDataUser": "boolean",
+    "preferredContentType": "video | gaming | browsing | social | mixed",
+    "roamingFrequency": "never | occasional | frequent",
+    "hasFamilyPlan": "boolean",
+    "travelScore": "number (0-1)"
+  },
+  
+  "mlMetadata": {
+    "userSegment": "heavy_data_user | heavy_voice_user | balanced_user | light_user | inactive_user",
+    "clusterLabel": "string (from K-means)",
+    "planType": "Prepaid | Postpaid",
+    "churnRisk": "number (0-1)",
+    "predictedLTV": "number"
+  }
+}</code></pre>
+                </div>
+            </section>
+
+            <!-- ML Integration -->
+            <section id="ml-integration" class="section">
+                <h2>ML Integration</h2>
+                <p>The backend integrates with a Hybrid Recommendation model deployed on Hugging Face Spaces.</p>
+
+                <h3>ML Model Details</h3>
+                <div class="info-box">
+                    <strong>🤖 Model:</strong> Telco Hybrid Recommender API<br>
+                    <strong>🌐 Endpoint:</strong> https://huuddz-telco-hybrid-api.hf.space/recommend<br>
+                    <strong>📊 Algorithm:</strong> Hybrid (Collaborative Filtering + Content-Based)<br>
+                    <strong>⚡ Timeout:</strong> 30 seconds<br>
+                    <strong>🔄 Fallback:</strong> Intelligent rule-based fallback when ML unavailable
+                </div>
+
+                <h3>ML Request Format</h3>
+                <div class="code-block">
+                    <div class="code-header">
+                        <span>JSON</span>
+                        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                    </div>
+                    <pre><code>{
+  "avg_data_usage_gb": 5.5,
+  "pct_video_usage": 60,
+  "avg_call_duration": 150.5,
+  "sms_freq": 50,
+  "monthly_spend": 120000.0,
+  "topup_freq": 2,
+  "travel_score": 20,
+  "complaint_count": 1,
+  "plan_type": "Prepaid",
+  "device_brand": "Samsung"
+}</code></pre>
+                </div>
+
+                <h3>ML Response Format</h3>
+                <div class="code-block">
+                    <div class="code-header">
+                        <span>JSON</span>
+                        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                    </div>
+                    <pre><code>{
+  "status": "success",
+  "primary_offer": "Retention Offer",
+  "top_offers": [
+    "Retention Offer",
+    "General Offer",
+    "Top-up Promo",
+    "Voice Bundle",
+    "Data Booster",
+    "Device Upgrade Offer"
+  ],
+  "confidence_score": 0.74,
+  "message": "Berdasarkan kebutuhan Anda, kami merekomendasikan..."
+}</code></pre>
+                </div>
+
+                <h3>Score Distribution</h3>
+                <p>The backend applies natural score distribution from the ML model:</p>
+                <ul>
+                    <li><strong>Top recommendation:</strong> Uses base confidence score from ML (e.g., 0.74)</li>
+                    <li><strong>Alternative recommendations:</strong> Natural decay of 3% per rank (0.97^rank)</li>
+                    <li><strong>Floor score:</strong> 0.35 to maintain recommendation quality</li>
+                    <li><strong>No artificial boosting:</strong> Preserves ML model's natural distribution</li>
+                </ul>
+
+                <h3>Fallback Mechanism</h3>
+                <p>When ML service is unavailable, the backend uses intelligent rule-based fallback:</p>
+                <ul>
+                    <li><strong>High data users:</strong> Data Booster, Streaming Pack (0.72-0.68)</li>
+                    <li><strong>Voice users:</strong> Voice Bundle, General Offer (0.75-0.65)</li>
+                    <li><strong>Streaming enthusiasts:</strong> Streaming Pack, Data Booster (0.78-0.70)</li>
+                    <li><strong>Travelers:</strong> Roaming Pass, General Offer (0.73-0.63)</li>
+                    <li><strong>Budget conscious:</strong> Top-up Promo, General Offer (0.70-0.65)</li>
+                    <li><strong>Premium users:</strong> Family Plan, Device Upgrade (0.76-0.71)</li>
+                </ul>
             </section>
 
             <!-- Error Codes -->
@@ -356,30 +1117,67 @@
                         <tr>
                             <td><code>400</code></td>
                             <td>Bad Request</td>
-                            <td>Invalid request payload or parameters</td>
+                            <td>Invalid request payload or parameters. Check request body and query params.</td>
                         </tr>
                         <tr>
                             <td><code>401</code></td>
                             <td>Unauthorized</td>
-                            <td>Missing or invalid JWT token</td>
+                            <td>Missing or invalid JWT token. Login required.</td>
                         </tr>
                         <tr>
                             <td><code>403</code></td>
                             <td>Forbidden</td>
-                            <td>Insufficient permissions</td>
+                            <td>Insufficient permissions. Admin role required.</td>
                         </tr>
                         <tr>
                             <td><code>404</code></td>
                             <td>Not Found</td>
-                            <td>Resource not found</td>
+                            <td>Resource not found. Check ID or endpoint.</td>
                         </tr>
                         <tr>
                             <td><code>500</code></td>
                             <td>Internal Server Error</td>
-                            <td>Server-side error occurred</td>
+                            <td>Server-side error occurred. Contact support if persists.</td>
+                        </tr>
+                        <tr>
+                            <td><code>503</code></td>
+                            <td>Service Unavailable</td>
+                            <td>ML service temporarily unavailable. Using fallback recommendations.</td>
                         </tr>
                     </tbody>
                 </table>
+
+                <h3>Common Error Examples</h3>
+                
+                <h4>401 Unauthorized</h4>
+                <div class="code-block">
+                    <pre><code>{
+  "status": "error",
+  "message": "Missing or invalid JWT token",
+  "statusCode": 401
+}</code></pre>
+                </div>
+
+                <h4>400 Bad Request (Validation Error)</h4>
+                <div class="code-block">
+                    <pre><code>{
+  "status": "error",
+  "message": "Invalid request payload input",
+  "statusCode": 400,
+  "validation": {
+    "phoneNumber": "Phone number must be valid Indonesian number"
+  }
+}</code></pre>
+                </div>
+
+                <h4>404 Not Found</h4>
+                <div class="code-block">
+                    <pre><code>{
+  "status": "error",
+  "message": "Product not found",
+  "statusCode": 404
+}</code></pre>
+                </div>
             </section>
 
             <!-- Code Examples -->
@@ -392,30 +1190,242 @@
                         <span>JavaScript</span>
                         <button class="copy-btn" onclick="copyCode(this)">Copy</button>
                     </div>
-                    <pre><code>// Login
+                    <pre><code>const BASE_URL = 'https://telco-recommendation-backend-production.up.railway.app';
+
+// Login
 const login = async (phoneNumber, name) => {
-  const response = await fetch('https://your-api.com/api/auth/login', {
+  const response = await fetch(`${BASE_URL}/api/auth/login`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ phoneNumber, name })
   });
-  return await response.json();
+  const data = await response.json();
+  
+  if (data.status === 'success') {
+    // Store token
+    localStorage.setItem('token', data.data.token);
+    return data.data;
+  }
+  throw new Error(data.message);
 };
 
 // Get Recommendations
-const getRecommendations = async (token) => {
-  const response = await fetch('https://your-api.com/api/recommendations?limit=5', {
-    headers: { 'Authorization': `Bearer ${token}` }
+const getRecommendations = async (limit = 5) => {
+  const token = localStorage.getItem('token');
+  
+  const response = await fetch(
+    `${BASE_URL}/api/recommendations?limit=${limit}&algorithm=hybrid`,
+    {
+      headers: { 
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    }
+  );
+  
+  const data = await response.json();
+  
+  if (data.status === 'success') {
+    return data.data.recommendations;
+  }
+  throw new Error(data.message);
+};
+
+// Get Products with Filters
+const getProducts = async (filters = {}) => {
+  const { page = 1, limit = 10, category, search } = filters;
+  
+  const params = new URLSearchParams({
+    page,
+    limit,
+    ...(category && { category }),
+    ...(search && { search })
   });
+  
+  const response = await fetch(`${BASE_URL}/api/products?${params}`);
+  const data = await response.json();
+  
+  return data.data;
+};
+
+// Track Interaction
+const trackInteraction = async (recommendationId, productId, action) => {
+  const token = localStorage.getItem('token');
+  
+  const response = await fetch(
+    `${BASE_URL}/api/recommendations/${recommendationId}/interaction`,
+    {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ productId, action })
+    }
+  );
+  
   return await response.json();
-};</code></pre>
+};
+
+// Update Profile
+const updateProfile = async (updates) => {
+  const token = localStorage.getItem('token');
+  
+  const response = await fetch(`${BASE_URL}/api/auth/profile`, {
+    method: 'PUT',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(updates)
+  });
+  
+  return await response.json();
+};
+
+// Example Usage
+async function main() {
+  try {
+    // Login
+    const { user, token } = await login('081234567890', 'John Doe');
+    console.log('Logged in:', user.name);
+    
+    // Get recommendations
+    const recommendations = await getRecommendations(5);
+    console.log('Recommendations:', recommendations);
+    
+    // Get products
+    const products = await getProducts({ 
+      category: 'data', 
+      limit: 20 
+    });
+    console.log('Products:', products);
+    
+    // Track purchase
+    await trackInteraction(
+      recommendations[0].id,
+      recommendations[0].productId,
+      'purchased'
+    );
+    
+  } catch (error) {
+    console.error('Error:', error.message);
+  }
+}</code></pre>
+                </div>
+
+                <h3>Python (requests)</h3>
+                <div class="code-block">
+                    <div class="code-header">
+                        <span>Python</span>
+                        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                    </div>
+                    <pre><code>import requests
+
+BASE_URL = 'https://telco-recommendation-backend-production.up.railway.app'
+
+# Login
+def login(phone_number, name=None):
+    response = requests.post(
+        f'{BASE_URL}/api/auth/login',
+        json={'phoneNumber': phone_number, 'name': name}
+    )
+    data = response.json()
+    
+    if data['status'] == 'success':
+        return data['data']
+    raise Exception(data['message'])
+
+# Get Recommendations
+def get_recommendations(token, limit=5, algorithm='hybrid'):
+    headers = {'Authorization': f'Bearer {token}'}
+    params = {'limit': limit, 'algorithm': algorithm}
+    
+    response = requests.get(
+        f'{BASE_URL}/api/recommendations',
+        headers=headers,
+        params=params
+    )
+    
+    data = response.json()
+    return data['data']['recommendations']
+
+# Get Products
+def get_products(category=None, search=None, page=1, limit=10):
+    params = {'page': page, 'limit': limit}
+    if category:
+        params['category'] = category
+    if search:
+        params['search'] = search
+    
+    response = requests.get(f'{BASE_URL}/api/products', params=params)
+    return response.json()['data']
+
+# Example usage
+if __name__ == '__main__':
+    # Login
+    result = login('081234567890', 'John Doe')
+    token = result['token']
+    print(f"Logged in as: {result['user']['name']}")
+    
+    # Get recommendations
+    recommendations = get_recommendations(token, limit=5)
+    print(f"Got {len(recommendations)} recommendations")
+    
+    for rec in recommendations:
+        product = rec['product']
+        print(f"- {product['name']}: Score {rec['score']:.2f}")
+    
+    # Get products
+    products = get_products(category='data', limit=20)
+    print(f"Found {len(products)} data products")</code></pre>
+                </div>
+
+                <h3>cURL</h3>
+                <div class="code-block">
+                    <div class="code-header">
+                        <span>Bash</span>
+                        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                    </div>
+                    <pre><code># Login
+curl -X POST \
+  https://telco-recommendation-backend-production.up.railway.app/api/auth/login \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "phoneNumber": "081234567890",
+    "name": "John Doe"
+  }'
+
+# Get Recommendations (with token)
+curl -X GET \
+  'https://telco-recommendation-backend-production.up.railway.app/api/recommendations?limit=5' \
+  -H 'Authorization: Bearer YOUR_JWT_TOKEN'
+
+# Get Products with filters
+curl -X GET \
+  'https://telco-recommendation-backend-production.up.railway.app/api/products?category=data&limit=20'
+
+# Track Interaction
+curl -X POST \
+  https://telco-recommendation-backend-production.up.railway.app/api/recommendations/RECOMMENDATION_ID/interaction \
+  -H 'Authorization: Bearer YOUR_JWT_TOKEN' \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "productId": "PRODUCT_ID",
+    "action": "purchased"
+  }'</code></pre>
                 </div>
             </section>
 
             <!-- Footer -->
             <footer style="text-align: center; padding: 2rem 0; color: #94a3b8; border-top: 1px solid #e2e8f0; margin-top: 3rem;">
-                <p>Made with by Muhammad Ariq Fadhil (A25-CS024)</p>
+                <p><strong>Made with ❤️ by Muhammad Ariq Fadhil (A25-CS024)</strong></p>
                 <p style="margin-top: 0.5rem;">Telco Recommendation System - Capstone Project</p>
+                <p style="margin-top: 1rem; font-size: 0.875rem;">
+                    <a href="https://github.com/yourusername/telco-backend" style="color: #2563eb; text-decoration: none;">GitHub</a> • 
+                    <a href="https://telco-recommendation-backend-production.up.railway.app" style="color: #2563eb; text-decoration: none;">API</a> • 
+                    <a href="https://huuddz-telco-hybrid-api.hf.space/docs" style="color: #2563eb; text-decoration: none;">ML Model</a>
+                </p>
             </footer>
         </main>
     </div>
@@ -447,6 +1457,31 @@ const getRecommendations = async (token) => {
                 }
             });
         });
+
+        // Highlight active section in navigation
+        const observerOptions = {
+            root: null,
+            rootMargin: '-100px 0px -66%',
+            threshold: 0
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    const id = entry.target.getAttribute('id');
+                    document.querySelectorAll('.nav a').forEach(link => {
+                        link.classList.remove('active');
+                        if (link.getAttribute('href') === `#${id}`) {
+                            link.classList.add('active');
+                        }
+                    });
+                }
+            });
+        }, observerOptions);
+
+        document.querySelectorAll('.section').forEach(section => {
+            observer.observe(section);
+        });
     </script>
 </body>
-</html>
+</html
