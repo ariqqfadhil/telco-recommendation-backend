@@ -657,13 +657,13 @@ chore: Update dependencies
 
 **Muhammad Ariq Fadhil (A25-CS024)**
 
-- GitHub: [@yourusername](https://github.com/yourusername)
-- Email: your.email@example.com
-- LinkedIn: [Your LinkedIn](https://linkedin.com/in/yourprofile)
+- GitHub: [@yourusername](https://github.com/ariqqfadhil)
+- Email: worklifeariqfadhil@gmail.com
+- LinkedIn: [Your LinkedIn](https://www.linkedin.com/in/muhammad-ariq-fadhil-737312339/)
 
 **Project:** Capstone Project - Telco Recommendation System  
 **Institution:** Dicoding Indonesia  
-**Program:** Bangkit Academy 2024
+**Program:** Asah 2025
 
 ---
 
@@ -685,7 +685,7 @@ This project is licensed under the ISC License - see the [LICENSE](LICENSE) file
 
 ## 📞 Support
 
-For support, email your.email@example.com or open an issue in the repository.
+For support, email worklifeariqfadhil@gmail.com or open an issue in the repository.
 
 ---
 
