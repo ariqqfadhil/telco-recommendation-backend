@@ -48,24 +48,13 @@ class RecommendationHandler {
       console.log('✅ ML recommendations received:', mlRecommendations.length);
       console.log('📊 ML scores:', mlRecommendations.map(r => r.score.toFixed(3)));
 
-      // SMART FILTERING: Prioritize recommendations matching user type
-      const filteredRecommendations = this._prioritizeByUserType(
-        mlRecommendations,
-        user.preferences
-      );
-
-      console.log('🎯 After smart filtering:', filteredRecommendations.length);
-      if (filteredRecommendations.length !== mlRecommendations.length) {
-        console.log('   Reordered to match user preference:', user.preferences?.usageType);
-      }
-
       // Get all active products (cached for performance)
       const allProducts = await Product.find({ isActive: true }).lean();
       console.log('✅ Total active products:', allProducts.length);
 
       // FIXED: Map ML recommendations to products DETERMINISTICALLY
       let recommendedProducts = this._mapRecommendationsDeterministic(
-        filteredRecommendations, // Use filtered recommendations
+        mlRecommendations,
         allProducts,
         limit,
         user // Pass user for budget filtering
@@ -205,77 +194,6 @@ class RecommendationHandler {
     }
 
     return defaults;
-  }
-
-  /**
-   * SMART FILTERING: Prioritize recommendations matching user type
-   * Reorder ML recommendations to put relevant ones first
-   */
-  _prioritizeByUserType(mlRecommendations, preferences = {}) {
-    const usageType = preferences.usageType || 'mixed';
-    
-    // Define relevance mapping
-    const relevanceMap = {
-      'voice': {
-        high: ['Voice Bundle', 'Family Plan Offer', 'General Offer'],
-        medium: ['Retention Offer', 'Device Upgrade Offer'],
-        low: ['Data Booster', 'Streaming Partner Pack', 'Roaming Pass', 'Top-up Promo']
-      },
-      'data': {
-        high: ['Data Booster', 'Streaming Partner Pack', 'General Offer'],
-        medium: ['Top-up Promo', 'Family Plan Offer'],
-        low: ['Voice Bundle', 'Roaming Pass', 'Device Upgrade Offer', 'Retention Offer']
-      },
-      'sms': {
-        high: ['General Offer', 'Family Plan Offer'],
-        medium: ['Retention Offer', 'Voice Bundle'],
-        low: ['Data Booster', 'Streaming Partner Pack', 'Roaming Pass', 'Top-up Promo']
-      },
-      'mixed': {
-        high: ['General Offer', 'Family Plan Offer', 'Retention Offer'],
-        medium: ['Data Booster', 'Voice Bundle', 'Streaming Partner Pack'],
-        low: ['Roaming Pass', 'Top-up Promo', 'Device Upgrade Offer']
-      }
-    };
-
-    const relevance = relevanceMap[usageType] || relevanceMap['mixed'];
-
-    // Score each recommendation based on relevance
-    const scoredRecommendations = mlRecommendations.map(rec => {
-      let relevanceScore = 0;
-      
-      if (relevance.high.includes(rec.targetOffer)) {
-        relevanceScore = 3;
-      } else if (relevance.medium.includes(rec.targetOffer)) {
-        relevanceScore = 2;
-      } else if (relevance.low.includes(rec.targetOffer)) {
-        relevanceScore = 1;
-      }
-
-      return {
-        ...rec,
-        relevanceScore,
-        // Boost ML score slightly for high-relevance offers
-        adjustedScore: relevanceScore === 3 ? rec.score * 1.2 : rec.score,
-      };
-    });
-
-    // Sort by: relevance first, then original ML score
-    scoredRecommendations.sort((a, b) => {
-      if (b.relevanceScore !== a.relevanceScore) {
-        return b.relevanceScore - a.relevanceScore; // Higher relevance first
-      }
-      return b.score - a.score; // Then by ML score
-    });
-
-    console.log('🎯 Relevance scoring:');
-    scoredRecommendations.slice(0, 5).forEach(rec => {
-      const relevanceLabel = rec.relevanceScore === 3 ? 'HIGH' : 
-                            rec.relevanceScore === 2 ? 'MED' : 'LOW';
-      console.log(`   ${rec.targetOffer}: ${relevanceLabel} (score: ${rec.score.toFixed(3)})`);
-    });
-
-    return scoredRecommendations;
   }
 
   /**
