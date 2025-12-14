@@ -657,7 +657,7 @@ chore: Update dependencies
 
 **Muhammad Ariq Fadhil (A25-CS024)**
 
-- GitHub: [@ariqqfadhil](https://github.com/ariqqfadhil)
+- GitHub: [ariqqfadhil](https://github.com/ariqqfadhil)
 - Email: worklifeariqfadhil@gmail.com
 - LinkedIn: [Muhammad Ariq Fadhil](https://www.linkedin.com/in/muhammad-ariq-fadhil-737312339/)
 
