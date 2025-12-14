@@ -47,9 +47,9 @@ class MLService {
         // Data usage in GB (convert from MB)
         avg_data_usage_gb: parseFloat((usageFeatures?.avgDataUsage || 5000) / 1024),
         
-        // Video usage percentage (0-1 OR 0-100 based on API, check docs)
-        // From schema: [0, 100] range, so convert 0-1 to 0-100
-        pct_video_usage: parseFloat((usageFeatures?.pctVideoUsage || 0.3) * 100),
+        // Video usage percentage (0-100 scale, from schema)
+        // Convert from 0-1 to 0-100 and ensure integer
+        pct_video_usage: parseInt((usageFeatures?.pctVideoUsage || 0.3) * 100),
         
         // Call duration in minutes
         avg_call_duration: parseFloat(usageFeatures?.avgCallDuration || 100),
@@ -63,8 +63,9 @@ class MLService {
         // Top-up frequency (integer)
         topup_freq: parseInt(usageFeatures?.topupFreq || 1),
         
-        // Travel score (0-1 OR 0-100, check schema - looks like 0-1)
-        travel_score: parseFloat(usageFeatures?.travelScore || 0.1),
+        // Travel score (INTEGER 0-100 scale, from error message)
+        // Convert from 0-1 to 0-100 and ensure integer
+        travel_score: parseInt((usageFeatures?.travelScore || 0.1) * 100),
         
         // Complaint count (integer)
         complaint_count: parseInt(usageFeatures?.complaintCount || 0),
