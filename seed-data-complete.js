@@ -257,6 +257,52 @@ const products = [
     targetOffer: 'Voice Bundle',
   },
 
+  // ========== SMS BUNDLE (4 products) ==========
+  {
+    name: 'SMS Bundle 100 Messages',
+    category: 'sms',
+    description: '100 SMS to all operators valid for 7 days',
+    price: 5000,
+    specifications: { 
+      smsCount: 100, 
+      validity: 7 
+    },
+    targetOffer: 'General Offer',
+  },
+  {
+    name: 'SMS Bundle 250 Messages',
+    category: 'sms',
+    description: '250 SMS to all operators for daily communication',
+    price: 10000,
+    specifications: { 
+      smsCount: 250, 
+      validity: 14 
+    },
+    targetOffer: 'General Offer',
+  },
+  {
+    name: 'SMS Bundle 500 Messages',
+    category: 'sms',
+    description: '500 SMS for frequent texters',
+    price: 18000,
+    specifications: { 
+      smsCount: 500, 
+      validity: 30 
+    },
+    targetOffer: 'General Offer',
+  },
+  {
+    name: 'SMS Bundle Unlimited',
+    category: 'sms',
+    description: 'Unlimited SMS to all operators for 30 days',
+    price: 25000,
+    specifications: { 
+      smsCount: 999999, 
+      validity: 30 
+    },
+    targetOffer: 'General Offer',
+  },
+
   // ========== ROAMING PASS (4 products) ==========
   {
     name: 'ASEAN Roaming Pass 3 Days',
