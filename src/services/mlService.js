@@ -142,53 +142,104 @@ class MLService {
   /**
    * Parse ML response to extract recommendations
    * Based on actual API response format from Hugging Face
+   * 
+   * Supports multiple response formats:
+   * 1. NEW FORMAT: { primary_offer, top_offers[], confidence_score }
+   * 2. OLD FORMAT: { recommendation: { primary_offer, social_proof_offer } }
+   * 
    * @private
    */
   _parseMLResponse(responseData) {
     const recommendations = [];
 
-    if (!responseData || !responseData.recommendation) {
-      console.warn('⚠️  No recommendation object in response');
+    if (!responseData) {
+      console.warn('⚠️  No response data');
       return recommendations;
     }
 
-    const rec = responseData.recommendation;
     const message = responseData.message || 'Recommended based on your usage pattern';
-    const confidenceScore = rec.confidence_score || 0.5;
-
-    // Add primary offer (main recommendation)
-    if (rec.primary_offer) {
-      recommendations.push({
-        targetOffer: rec.primary_offer,
-        score: confidenceScore,
-        reason: message,
-        metadata: {
-          type: 'primary',
-          user_summary: responseData.user_summary,
-        }
+    
+    // NEW FORMAT: top_offers array (PRIORITY - check this first!)
+    if (responseData.top_offers && Array.isArray(responseData.top_offers)) {
+      console.log('✅ Using NEW response format (top_offers array)');
+      
+      // Confidence score could be 0-1 or 0-100 scale
+      let confidenceScore = responseData.confidence_score || 0.5;
+      
+      // Normalize to 0-1 scale if needed
+      if (confidenceScore > 1) {
+        confidenceScore = confidenceScore / 100;
+      }
+      
+      // Map each offer in the array
+      responseData.top_offers.forEach((offer, index) => {
+        // Decay confidence for lower-ranked offers
+        const rankDecay = 1 - (index * 0.05); // 5% decay per rank
+        const adjustedScore = Math.max(confidenceScore * rankDecay, 0.3);
+        
+        recommendations.push({
+          targetOffer: offer,
+          score: adjustedScore,
+          reason: index === 0 
+            ? `${message} (Top recommendation)` 
+            : `Alternative recommendation (Rank ${index + 1})`,
+          metadata: {
+            type: index === 0 ? 'primary' : 'alternative',
+            rank: index + 1,
+            original_confidence: confidenceScore,
+          }
+        });
       });
+      
+      return recommendations;
     }
 
-    // Add social proof offer if it's different from primary
-    if (rec.social_proof_offer && rec.social_proof_offer !== rec.primary_offer) {
-      recommendations.push({
-        targetOffer: rec.social_proof_offer,
-        score: confidenceScore * 0.85, // Slightly lower confidence for social proof
-        reason: 'Popular among users with similar usage patterns (Social Proof)',
-        metadata: {
-          type: 'social_proof',
-          user_summary: responseData.user_summary,
-        }
-      });
+    // OLD FORMAT: recommendation object (FALLBACK)
+    if (responseData.recommendation) {
+      console.log('✅ Using OLD response format (recommendation object)');
+      
+      const rec = responseData.recommendation;
+      const confidenceScore = rec.confidence_score || 0.5;
+
+      // Add primary offer
+      if (rec.primary_offer) {
+        recommendations.push({
+          targetOffer: rec.primary_offer,
+          score: confidenceScore,
+          reason: message,
+          metadata: {
+            type: 'primary',
+            user_summary: responseData.user_summary,
+          }
+        });
+      }
+
+      // Add social proof offer if different
+      if (rec.social_proof_offer && rec.social_proof_offer !== rec.primary_offer) {
+        recommendations.push({
+          targetOffer: rec.social_proof_offer,
+          score: confidenceScore * 0.85,
+          reason: 'Popular among users with similar usage patterns',
+          metadata: {
+            type: 'social_proof',
+            user_summary: responseData.user_summary,
+          }
+        });
+      }
+
+      // Boost confidence if both agree
+      if (rec.social_proof_offer === rec.primary_offer && recommendations.length === 1) {
+        recommendations[0].score = Math.min(confidenceScore * 1.1, 1.0);
+        recommendations[0].reason = 'Highly recommended! Both algorithms agree on this offer.';
+      }
+
+      return recommendations;
     }
 
-    // If both are the same, just return one with higher confidence
-    if (rec.social_proof_offer === rec.primary_offer && recommendations.length === 1) {
-      // Boost confidence since both algorithms agree
-      recommendations[0].score = Math.min(confidenceScore * 1.1, 1.0);
-      recommendations[0].reason = 'Highly recommended! Both content-based and collaborative filtering agree on this offer.';
-    }
-
+    // If neither format matched
+    console.warn('⚠️  Unknown response format');
+    console.warn('Response keys:', Object.keys(responseData));
+    
     return recommendations;
   }
 
