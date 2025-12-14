@@ -157,8 +157,8 @@
                             <button class="copy-btn" onclick="copyCode(this)">Copy</button>
                         </div>
                         <pre><code>{
-  "phoneNumber": "081234567890",
-  "name": "John Doe" // Optional
+  "phoneNumber": "081234567893",
+  "name": "Test User" // Optional
 }</code></pre>
                     </div>
 
@@ -169,10 +169,18 @@
   "message": "Login successful",
   "data": {
     "user": {
-      "id": "507f1f77bcf86cd799439011",
-      "phoneNumber": "081234567890",
-      "name": "John Doe",
-      "role": "user"
+      "id": "693e9e6d8a13fdbaa3326a20",
+      "phoneNumber": "081234567893",
+      "name": "Voice User",
+      "role": "user",
+      "isNewUser": false,
+      "preferences": {
+        "usageType": "voice",
+        "budget": "low",
+        "interests": ["work"]
+      },
+      "profilePicture": "",
+      "lastLogin": "2025-12-14T14:00:15.600Z"
     },
     "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
   }
