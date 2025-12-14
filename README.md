@@ -657,9 +657,9 @@ chore: Update dependencies
 
 **Muhammad Ariq Fadhil (A25-CS024)**
 
-- GitHub: [@yourusername](https://github.com/ariqqfadhil)
+- GitHub: [@ariqqfadhil](https://github.com/ariqqfadhil)
 - Email: worklifeariqfadhil@gmail.com
-- LinkedIn: [Your LinkedIn](https://www.linkedin.com/in/muhammad-ariq-fadhil-737312339/)
+- LinkedIn: [Muhammad Ariq Fadhil](https://www.linkedin.com/in/muhammad-ariq-fadhil-737312339/)
 
 **Project:** Capstone Project - Telco Recommendation System  
 **Institution:** Dicoding Indonesia  
@@ -675,7 +675,7 @@ This project is licensed under the ISC License - see the [LICENSE](LICENSE) file
 
 ## 🙏 Acknowledgments
 
-- **Dicoding Indonesia** - For the Bangkit Academy program
+- **Dicoding Indonesia & Accenture** - For the Asah program
 - **Hugging Face** - For ML model hosting platform
 - **Railway** - For backend deployment
 - **MongoDB Atlas** - For cloud database
