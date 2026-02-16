@@ -1,4 +1,4 @@
-// src/handlers/recommendationHandler.js (OPTIMIZED)
+// src/handlers/recommendationHandler.js
 
 const Boom = require('@hapi/boom');
 const Recommendation = require('../models/Recommendation');
@@ -11,7 +11,6 @@ const { successResponse } = require('../utils/response');
 class RecommendationHandler {
   /**
    * GET /api/recommendations - Get personalized recommendations
-   * OPTIMIZED: Natural distribution + Smart fallback + Better product matching
    */
   getRecommendations = async (request, h) => {
     try {
